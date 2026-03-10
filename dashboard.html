@@ -66,25 +66,47 @@
             </button>
 
             <!-- Page Header -->
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <div>
                     <h1 id="page-title" class="text-2xl font-bold text-slate-900">Your Ad Accounts</h1>
                     <p id="last-updated" class="text-sm text-slate-500 mt-1"></p>
                 </div>
                 
-                <!-- Period Selector (hidden by default, shown in campaigns view) -->
-                <div id="period-selector" class="hidden">
-                    <select id="period-dropdown" onchange="onPeriodChange()" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                        <option value="today">Today</option>
-                        <option value="yesterday">Yesterday</option>
-                        <option value="last_7d">Last 7 Days</option>
-                        <option value="last_14d">Last 14 Days</option>
-                        <option value="this_month" selected>This Month</option>
-                        <option value="last_month">Last Month</option>
-                        <option value="last_30d">Last 30 Days</option>
-                        <option value="last_90d">Last 90 Days</option>
-                        <option value="maximum">All Time</option>
-                    </select>
+                <!-- Filters -->
+                <div id="filters-section" class="flex items-center gap-3 flex-wrap">
+                    <!-- Active Only Toggle (for accounts) -->
+                    <div id="accounts-filter" class="flex items-center gap-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="active-accounts-toggle" checked onchange="onAccountsFilterChange()" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                        <span class="text-sm text-slate-600">Active only</span>
+                    </div>
+                    
+                    <!-- Campaign Filters (hidden by default) -->
+                    <div id="campaigns-filters" class="hidden flex items-center gap-3">
+                        <!-- Active Only Toggle -->
+                        <div class="flex items-center gap-2">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="active-campaigns-toggle" checked onchange="onCampaignsFilterChange()" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                            <span class="text-sm text-slate-600">Active only</span>
+                        </div>
+                        
+                        <!-- Period Selector -->
+                        <select id="period-dropdown" onchange="onPeriodChange()" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="last_7d">Last 7 Days</option>
+                            <option value="last_14d">Last 14 Days</option>
+                            <option value="this_month" selected>This Month</option>
+                            <option value="last_month">Last Month</option>
+                            <option value="last_30d">Last 30 Days</option>
+                            <option value="last_90d">Last 90 Days</option>
+                            <option value="maximum">All Time</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -106,9 +128,12 @@
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                         <h2 class="font-semibold text-slate-900">Campaigns</h2>
-                        <span id="period-label" class="text-sm text-slate-500"></span>
+                        <span id="campaigns-count" class="text-sm text-slate-500"></span>
                     </div>
                     <div id="campaigns-list" class="divide-y divide-slate-100"></div>
+                    <div id="no-campaigns" class="hidden p-12 text-center">
+                        <p class="text-slate-500">No campaigns match the current filter.</p>
+                    </div>
                 </div>
             </div>
 
@@ -146,7 +171,7 @@
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Media Plan Budget ($)</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Media Plan Budget (€)</label>
                     <input type="number" id="budget-input" placeholder="e.g., 1000" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
@@ -171,17 +196,21 @@
         // Configuration
         const META_APP_ID = '1237093665238006';
         const REDIRECT_URI = 'https://ad-gurard-monitor.vercel.app/auth/callback';
+        const CURRENCY_SYMBOL = '€';
         
         // State
         let accessToken = null;
         let currentAccountId = null;
         let currentAccountName = null;
         let currentPeriod = 'this_month';
+        let showActiveAccountsOnly = true;
+        let showActiveCampaignsOnly = true;
         let budgets = {};
         let currentEditingCampaign = null;
+        let accountsCache = null;
         let campaignsCache = null;
 
-        // Period labels for display
+        // Period labels
         const periodLabels = {
             'today': 'Today',
             'yesterday': 'Yesterday',
@@ -193,6 +222,11 @@
             'last_90d': 'Last 90 Days',
             'maximum': 'All Time'
         };
+
+        // Format currency
+        function formatCurrency(amount) {
+            return CURRENCY_SYMBOL + parseFloat(amount).toFixed(2);
+        }
 
         // Initialize
         window.onload = function() {
@@ -268,12 +302,36 @@
             document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
         }
 
+        // Filter change handlers
+        function onAccountsFilterChange() {
+            showActiveAccountsOnly = document.getElementById('active-accounts-toggle').checked;
+            if (accountsCache) {
+                renderAccounts(accountsCache);
+            }
+        }
+
+        function onCampaignsFilterChange() {
+            showActiveCampaignsOnly = document.getElementById('active-campaigns-toggle').checked;
+            if (campaignsCache) {
+                renderCampaigns(campaignsCache);
+                checkBudgetAlerts(campaignsCache);
+            }
+        }
+
+        function onPeriodChange() {
+            currentPeriod = document.getElementById('period-dropdown').value;
+            if (currentAccountId) {
+                viewCampaigns(currentAccountId, currentAccountName);
+            }
+        }
+
         // Data functions
         async function loadAdAccounts() {
             showLoading();
             document.getElementById('page-title').textContent = 'Your Ad Accounts';
             document.getElementById('back-btn').classList.add('hidden');
-            document.getElementById('period-selector').classList.add('hidden');
+            document.getElementById('accounts-filter').classList.remove('hidden');
+            document.getElementById('campaigns-filters').classList.add('hidden');
 
             try {
                 const response = await fetch(
@@ -293,6 +351,7 @@
                     return;
                 }
 
+                accountsCache = data.data;
                 renderAccounts(data.data);
                 updateLastUpdated();
 
@@ -304,9 +363,26 @@
         function renderAccounts(accounts) {
             const container = document.getElementById('accounts-list');
             
-            container.innerHTML = accounts.map(account => {
-                const spent = (parseInt(account.amount_spent || 0) / 100).toFixed(2);
-                const balance = (parseInt(account.balance || 0) / 100).toFixed(2);
+            // Filter accounts
+            let filteredAccounts = accounts;
+            if (showActiveAccountsOnly) {
+                filteredAccounts = accounts.filter(a => a.account_status === 1);
+            }
+
+            if (filteredAccounts.length === 0) {
+                document.getElementById('no-data').classList.remove('hidden');
+                document.getElementById('no-data-text').textContent = showActiveAccountsOnly 
+                    ? 'No active ad accounts found. Toggle "Active only" to see all accounts.'
+                    : 'No ad accounts found.';
+                container.classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('no-data').classList.add('hidden');
+            
+            container.innerHTML = filteredAccounts.map(account => {
+                const spent = (parseInt(account.amount_spent || 0) / 100);
+                const balance = (parseInt(account.balance || 0) / 100);
                 const isActive = account.account_status === 1;
                 
                 return `
@@ -323,11 +399,11 @@
                         <div class="grid grid-cols-3 gap-4 mb-5">
                             <div class="bg-slate-50 rounded-xl p-4">
                                 <p class="text-sm text-slate-500 mb-1">Total Spent (Lifetime)</p>
-                                <p class="text-2xl font-bold text-slate-900">$${spent}</p>
+                                <p class="text-2xl font-bold text-slate-900">${formatCurrency(spent)}</p>
                             </div>
                             <div class="bg-slate-50 rounded-xl p-4">
                                 <p class="text-sm text-slate-500 mb-1">Balance</p>
-                                <p class="text-2xl font-bold text-slate-900">$${balance}</p>
+                                <p class="text-2xl font-bold text-slate-900">${formatCurrency(balance)}</p>
                             </div>
                             <div class="bg-slate-50 rounded-xl p-4">
                                 <p class="text-sm text-slate-500 mb-1">Currency</p>
@@ -353,8 +429,8 @@
             document.getElementById('page-title').textContent = accountName;
             document.getElementById('back-btn').classList.remove('hidden');
             document.getElementById('accounts-list').classList.add('hidden');
-            document.getElementById('period-selector').classList.remove('hidden');
-            document.getElementById('period-label').textContent = periodLabels[currentPeriod];
+            document.getElementById('accounts-filter').classList.add('hidden');
+            document.getElementById('campaigns-filters').classList.remove('hidden');
 
             try {
                 const response = await fetch(
@@ -384,32 +460,33 @@
             }
         }
 
-        function onPeriodChange() {
-            currentPeriod = document.getElementById('period-dropdown').value;
-            if (currentAccountId) {
-                viewCampaigns(currentAccountId, currentAccountName);
-            }
-        }
-
         function renderCampaigns(campaigns) {
+            // Filter campaigns
+            let filteredCampaigns = campaigns;
+            if (showActiveCampaignsOnly) {
+                filteredCampaigns = campaigns.filter(c => c.status === 'ACTIVE');
+            }
+
+            // Calculate totals
             let totalSpend = 0;
             let totalBudget = 0;
-            let activeCampaigns = 0;
             
-            campaigns.forEach(c => {
+            filteredCampaigns.forEach(c => {
                 const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
                 totalSpend += spend;
-                if (c.status === 'ACTIVE') activeCampaigns++;
                 const budget = budgets[c.id]?.mediaPlanBudget || 0;
                 totalBudget += budget;
             });
+
+            const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE').length;
+            const totalCampaigns = campaigns.length;
 
             // Render summary
             document.getElementById('account-summary').innerHTML = `
                 <div class="grid grid-cols-4 gap-6">
                     <div>
                         <p class="text-sm text-slate-500 mb-1">Total Campaigns</p>
-                        <p class="text-3xl font-bold text-slate-900">${campaigns.length}</p>
+                        <p class="text-3xl font-bold text-slate-900">${totalCampaigns}</p>
                     </div>
                     <div>
                         <p class="text-sm text-slate-500 mb-1">Active</p>
@@ -417,20 +494,32 @@
                     </div>
                     <div>
                         <p class="text-sm text-slate-500 mb-1">Spend (${periodLabels[currentPeriod]})</p>
-                        <p class="text-3xl font-bold text-slate-900">$${totalSpend.toFixed(2)}</p>
+                        <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalSpend)}</p>
                     </div>
                     <div>
                         <p class="text-sm text-slate-500 mb-1">Total Budget Set</p>
-                        <p class="text-3xl font-bold text-slate-900">$${totalBudget.toFixed(2)}</p>
+                        <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalBudget)}</p>
                     </div>
                 </div>
             `;
 
-            // Update period label
-            document.getElementById('period-label').textContent = 'Showing: ' + periodLabels[currentPeriod];
+            // Update campaigns count
+            document.getElementById('campaigns-count').textContent = 
+                `Showing ${filteredCampaigns.length} of ${totalCampaigns} campaigns • ${periodLabels[currentPeriod]}`;
+
+            // Check if no campaigns after filter
+            if (filteredCampaigns.length === 0) {
+                document.getElementById('campaigns-list').classList.add('hidden');
+                document.getElementById('no-campaigns').classList.remove('hidden');
+                document.getElementById('campaigns-section').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('no-campaigns').classList.add('hidden');
+            document.getElementById('campaigns-list').classList.remove('hidden');
 
             // Render campaigns
-            document.getElementById('campaigns-list').innerHTML = campaigns.map(campaign => {
+            document.getElementById('campaigns-list').innerHTML = filteredCampaigns.map(campaign => {
                 const spend = parseFloat(campaign.insights?.data?.[0]?.spend || 0);
                 const impressions = parseInt(campaign.insights?.data?.[0]?.impressions || 0);
                 const clicks = parseInt(campaign.insights?.data?.[0]?.clicks || 0);
@@ -482,8 +571,8 @@
                                     <div class="h-full ${progressColor} rounded-full transition-all" style="width: ${Math.min(spendPercent, 100)}%"></div>
                                 </div>
                                 <div class="flex justify-between mt-2 text-sm">
-                                    <span class="font-medium text-slate-900">$${spend.toFixed(2)} spent</span>
-                                    <span class="text-slate-500">$${mediaPlanBudget.toFixed(2)} budget</span>
+                                    <span class="font-medium text-slate-900">${formatCurrency(spend)} spent</span>
+                                    <span class="text-slate-500">${formatCurrency(mediaPlanBudget)} budget</span>
                                 </div>
                             </div>
                         ` : `
@@ -495,7 +584,7 @@
                         <div class="grid grid-cols-5 gap-4">
                             <div class="bg-slate-50 rounded-lg p-3">
                                 <p class="text-xs text-slate-500 mb-1">Spend</p>
-                                <p class="text-lg font-bold text-slate-900">$${spend.toFixed(2)}</p>
+                                <p class="text-lg font-bold text-slate-900">${formatCurrency(spend)}</p>
                             </div>
                             <div class="bg-slate-50 rounded-lg p-3">
                                 <p class="text-xs text-slate-500 mb-1">Impressions</p>
@@ -507,7 +596,7 @@
                             </div>
                             <div class="bg-slate-50 rounded-lg p-3">
                                 <p class="text-xs text-slate-500 mb-1">CPC</p>
-                                <p class="text-lg font-bold text-slate-900">$${cpc.toFixed(2)}</p>
+                                <p class="text-lg font-bold text-slate-900">${formatCurrency(cpc)}</p>
                             </div>
                             <div class="bg-slate-50 rounded-lg p-3">
                                 <p class="text-xs text-slate-500 mb-1">CTR</p>
@@ -524,7 +613,13 @@
         function checkBudgetAlerts(campaigns) {
             const alerts = [];
             
-            campaigns.forEach(campaign => {
+            // Only check filtered campaigns
+            let filteredCampaigns = campaigns;
+            if (showActiveCampaignsOnly) {
+                filteredCampaigns = campaigns.filter(c => c.status === 'ACTIVE');
+            }
+            
+            filteredCampaigns.forEach(campaign => {
                 const spend = parseFloat(campaign.insights?.data?.[0]?.spend || 0);
                 const budgetInfo = budgets[campaign.id] || {};
                 const mediaPlanBudget = budgetInfo.mediaPlanBudget || 0;
@@ -536,14 +631,14 @@
                         alerts.push({
                             type: 'critical',
                             title: 'Budget Exceeded!',
-                            message: `"${campaign.name}" has spent $${spend.toFixed(2)} (${percent.toFixed(0)}% of $${mediaPlanBudget} budget)`,
+                            message: `"${campaign.name}" has spent ${formatCurrency(spend)} (${percent.toFixed(0)}% of ${formatCurrency(mediaPlanBudget)} budget)`,
                             campaignId: campaign.id
                         });
                     } else if (percent >= 80) {
                         alerts.push({
                             type: 'warning',
                             title: 'Approaching Budget Limit',
-                            message: `"${campaign.name}" has spent $${spend.toFixed(2)} (${percent.toFixed(0)}% of $${mediaPlanBudget} budget)`,
+                            message: `"${campaign.name}" has spent ${formatCurrency(spend)} (${percent.toFixed(0)}% of ${formatCurrency(mediaPlanBudget)} budget)`,
                             campaignId: campaign.id
                         });
                     }
@@ -587,7 +682,6 @@
             campaignsCache = null;
             document.getElementById('campaigns-section').classList.add('hidden');
             document.getElementById('alerts-section').classList.add('hidden');
-            document.getElementById('period-selector').classList.add('hidden');
             loadAdAccounts();
         }
 
