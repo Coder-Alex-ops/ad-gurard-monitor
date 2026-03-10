@@ -676,7 +676,8 @@
                 budget,
                 budgetType,
                 spendPercent: 0,
-                expectedSpend: 0,
+                expectedToDate: 0,      // Expected до момента (за pacing)
+                expectedTotal: 0,        // Expected за целия период (информативно)
                 pacingPercent: 0,
                 pacingStatus: 'on-track',
                 displaySpend: 0,
@@ -692,37 +693,47 @@
                 result.displayBudget = budget;
                 result.spendPercent = (todaySpend / budget) * 100;
                 
-                // Expected for entire period = daily budget × total days in period
-                result.expectedSpend = budget * (totalDaysInPeriod || 30);
+                // Expected до момента = daily budget × days elapsed
+                result.expectedToDate = budget * (daysElapsed || 1);
                 
-                // Pacing: period spend vs expected spend
-                result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
+                // Expected за целия период (информативно)
+                result.expectedTotal = budget * (totalDaysInPeriod || 30);
+                
+                // Pacing: period spend vs expected TO DATE (not total)
+                result.pacingPercent = result.expectedToDate > 0 ? (periodSpend / result.expectedToDate) * 100 : 0;
                 
             } else if (budgetType === 'weekly') {
                 // Weekly budget
-                const weeksInPeriod = (totalDaysInPeriod || 30) / 7;
-                result.expectedSpend = budget * weeksInPeriod;
+                const weeksElapsed = Math.max(1, Math.ceil(daysElapsed / 7));
+                const totalWeeks = Math.ceil((totalDaysInPeriod || 30) / 7);
+                
+                result.expectedToDate = budget * weeksElapsed;
+                result.expectedTotal = budget * totalWeeks;
                 result.displaySpend = periodSpend;
-                result.spendPercent = (periodSpend / result.expectedSpend) * 100;
-                result.pacingPercent = result.spendPercent;
+                result.pacingPercent = result.expectedToDate > 0 ? (periodSpend / result.expectedToDate) * 100 : 0;
                 
             } else if (budgetType === 'monthly') {
-                // Monthly budget - compare period spend with monthly budget
-                result.expectedSpend = budget;
+                // Monthly budget
+                const today = new Date();
+                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                const dayOfMonth = today.getDate();
+                
+                // Expected до момента = (monthly budget / days in month) × days elapsed
+                result.expectedToDate = (budget / daysInMonth) * dayOfMonth;
+                result.expectedTotal = budget;
                 result.displaySpend = periodSpend;
                 result.displayBudget = budget;
-                result.spendPercent = (periodSpend / budget) * 100;
-                result.pacingPercent = result.spendPercent;
+                result.pacingPercent = result.expectedToDate > 0 ? (periodSpend / result.expectedToDate) * 100 : 0;
                 
             } else {
                 // Total campaign budget
                 result.displaySpend = periodSpend;
-                result.expectedSpend = budget;
-                result.spendPercent = (periodSpend / budget) * 100;
-                result.pacingPercent = result.spendPercent;
+                result.expectedToDate = budget; // За total budget няма "до момента"
+                result.expectedTotal = budget;
+                result.pacingPercent = budget > 0 ? (periodSpend / budget) * 100 : 0;
             }
 
-            // Determine pacing status based on new thresholds
+            // Determine pacing status based on thresholds
             // < 80% = Severely Underspending
             // 80-95% = Underspending
             // 95-105% = On track
@@ -753,7 +764,8 @@
             }
 
             let totalSpend = 0;
-            let totalExpected = 0;
+            let totalExpectedToDate = 0;
+            let totalExpectedTotal = 0;
             
             filteredCampaigns.forEach(c => {
                 const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
@@ -761,7 +773,8 @@
                 const budgetInfo = budgets[c.id] || {};
                 const pacing = calculatePacing(c, budgetInfo);
                 if (pacing) {
-                    totalExpected += pacing.expectedSpend;
+                    totalExpectedToDate += pacing.expectedToDate;
+                    totalExpectedTotal += pacing.expectedTotal;
                 }
             });
 
@@ -769,7 +782,7 @@
             const totalCampaigns = campaigns.length;
 
             document.getElementById('account-summary').innerHTML = `
-                <div class="grid grid-cols-4 gap-6">
+                <div class="grid grid-cols-5 gap-6">
                     <div>
                         <p class="text-sm text-slate-500 mb-1">Total Campaigns</p>
                         <p class="text-3xl font-bold text-slate-900">${totalCampaigns}</p>
@@ -783,8 +796,12 @@
                         <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalSpend)}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-500 mb-1">Expected for Period</p>
-                        <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalExpected)}</p>
+                        <p class="text-sm text-slate-500 mb-1">Expected to Date</p>
+                        <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalExpectedToDate)}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500 mb-1">Expected Total</p>
+                        <p class="text-3xl font-bold text-slate-500">${formatCurrency(totalExpectedTotal)}</p>
                     </div>
                 </div>
             `;
@@ -884,14 +901,18 @@
                                 </div>
                             ` : ''}
                             
-                            <div class="grid grid-cols-2 gap-4 text-sm ${pacing.budgetType === 'daily' ? 'pt-3 border-t border-slate-200' : ''}">
+                            <div class="grid grid-cols-3 gap-4 text-sm ${pacing.budgetType === 'daily' ? 'pt-3 border-t border-slate-200' : ''}">
                                 <div>
                                     <span class="text-slate-500">Period Spend</span>
                                     <p class="font-semibold text-slate-900 text-lg">${formatCurrency(pacing.periodSpend)}</p>
                                 </div>
                                 <div>
-                                    <span class="text-slate-500">Expected (${pacing.totalDaysInPeriod || '?'} days)</span>
-                                    <p class="font-semibold text-slate-900 text-lg">${formatCurrency(pacing.expectedSpend)}</p>
+                                    <span class="text-slate-500">Expected to date (${pacing.daysElapsed} days)</span>
+                                    <p class="font-semibold ${pacing.pacingStatus === 'on-track' ? 'text-emerald-600' : pacing.pacingStatus === 'overspending' ? 'text-red-600' : 'text-amber-600'} text-lg">${formatCurrency(pacing.expectedToDate)}</p>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Expected total (${pacing.totalDaysInPeriod} days)</span>
+                                    <p class="font-semibold text-slate-500 text-lg">${formatCurrency(pacing.expectedTotal)}</p>
                                 </div>
                             </div>
                         </div>
@@ -968,14 +989,14 @@
                         alerts.push({
                             type: 'critical',
                             title: 'Overspending Alert',
-                            message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedSpend)})`,
+                            message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)} expected to date)`,
                             campaignId: campaign.id
                         });
                     } else if (pacing.pacingStatus === 'severely-underspending') {
                         alerts.push({
                             type: 'warning',
                             title: 'Severely Underspending',
-                            message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedSpend)})`,
+                            message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)} expected to date)`,
                             campaignId: campaign.id
                         });
                     }
