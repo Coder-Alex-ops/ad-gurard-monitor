@@ -94,7 +94,7 @@
                     </div>
                     
                     <!-- Campaign Filters (hidden by default) -->
-                    <div id="campaigns-filters" class="hidden flex items-center gap-3">
+                    <div id="campaigns-filters" class="hidden flex items-center gap-3 flex-wrap">
                         <!-- Campaign Search -->
                         <div class="relative">
                             <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,7 @@
                             </svg>
                             <input type="text" id="campaign-search-input" placeholder="Search campaigns..." 
                                 onkeyup="onCampaignSearch()" 
-                                class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                         
                         <!-- Active Only Toggle -->
@@ -124,8 +124,17 @@
                             <option value="last_month">Last Month</option>
                             <option value="last_30d">Last 30 Days</option>
                             <option value="last_90d">Last 90 Days</option>
+                            <option value="this_year">This Year</option>
                             <option value="maximum">All Time</option>
+                            <option value="custom">Custom Range...</option>
                         </select>
+                        
+                        <!-- Custom Date Range (hidden by default) -->
+                        <div id="custom-date-range" class="hidden flex items-center gap-2">
+                            <input type="date" id="date-from" onchange="onCustomDateChange()" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="text-slate-400">to</span>
+                            <input type="date" id="date-to" onchange="onCustomDateChange()" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -223,6 +232,8 @@
         let currentAccountId = null;
         let currentAccountName = null;
         let currentPeriod = 'this_month';
+        let customDateFrom = null;
+        let customDateTo = null;
         let showActiveAccountsOnly = true;
         let showActiveCampaignsOnly = true;
         let accountSearchQuery = '';
@@ -243,22 +254,71 @@
             'last_month': 'Last Month',
             'last_30d': 'Last 30 Days',
             'last_90d': 'Last 90 Days',
-            'maximum': 'All Time'
+            'this_year': 'This Year',
+            'maximum': 'All Time',
+            'custom': 'Custom Range'
         };
 
-        // Get number of days in current period
-        function getPeriodDays(period) {
+        // Get total days in period (for Expected calculation)
+        function getTotalDaysInPeriod(period) {
             const today = new Date();
             switch(period) {
                 case 'today': return 1;
                 case 'yesterday': return 1;
                 case 'last_7d': return 7;
                 case 'last_14d': return 14;
-                case 'this_month': return today.getDate(); // Days elapsed this month
+                case 'this_month': 
+                    return new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
                 case 'last_month': 
                     return new Date(today.getFullYear(), today.getMonth(), 0).getDate();
                 case 'last_30d': return 30;
                 case 'last_90d': return 90;
+                case 'this_year':
+                    const startOfYear = new Date(today.getFullYear(), 0, 1);
+                    const endOfYear = new Date(today.getFullYear(), 11, 31);
+                    return Math.ceil((endOfYear - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+                case 'custom':
+                    if (customDateFrom && customDateTo) {
+                        const from = new Date(customDateFrom);
+                        const to = new Date(customDateTo);
+                        return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+                    }
+                    return 30;
+                case 'maximum': return null;
+                default: return 30;
+            }
+        }
+
+        // Get days elapsed in period (for progress calculation)
+        function getDaysElapsedInPeriod(period) {
+            const today = new Date();
+            switch(period) {
+                case 'today': return 1;
+                case 'yesterday': return 1;
+                case 'last_7d': return 7;
+                case 'last_14d': return 14;
+                case 'this_month': return today.getDate();
+                case 'last_month': 
+                    return new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+                case 'last_30d': return 30;
+                case 'last_90d': return 90;
+                case 'this_year': 
+                    const startOfYear = new Date(today.getFullYear(), 0, 1);
+                    return Math.ceil((today - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+                case 'custom':
+                    if (customDateFrom && customDateTo) {
+                        const from = new Date(customDateFrom);
+                        const to = new Date(customDateTo);
+                        const now = new Date();
+                        if (now > to) {
+                            return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+                        } else if (now < from) {
+                            return 0;
+                        } else {
+                            return Math.ceil((now - from) / (1000 * 60 * 60 * 24)) + 1;
+                        }
+                    }
+                    return 30;
                 case 'maximum': return null;
                 default: return 30;
             }
@@ -267,6 +327,16 @@
         // Format currency
         function formatCurrency(amount) {
             return CURRENCY_SYMBOL + parseFloat(amount).toFixed(2);
+        }
+
+        // Get period label
+        function getPeriodLabel() {
+            if (currentPeriod === 'custom' && customDateFrom && customDateTo) {
+                const from = new Date(customDateFrom).toLocaleDateString();
+                const to = new Date(customDateTo).toLocaleDateString();
+                return `${from} - ${to}`;
+            }
+            return periodLabels[currentPeriod];
         }
 
         // Initialize
@@ -285,15 +355,21 @@
             }
 
             document.getElementById('budget-period').addEventListener('change', updateBudgetHint);
+            
+            // Set default dates for custom range
+            const today = new Date();
+            const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('date-from').value = firstOfMonth.toISOString().split('T')[0];
+            document.getElementById('date-to').value = today.toISOString().split('T')[0];
         };
 
         function updateBudgetHint() {
             const type = document.getElementById('budget-period').value;
             const hints = {
-                'daily': 'Daily: Compares today\'s spend with daily limit. Shows pacing for the selected period.',
-                'weekly': 'Weekly: Compares current week\'s spend with weekly limit.',
-                'monthly': 'Monthly: Compares current month\'s spend with monthly limit.',
-                'total': 'Total: Compares all-time spend with total campaign budget.'
+                'daily': 'Daily: Expected = daily budget × days in period',
+                'weekly': 'Weekly: Expected = weekly budget × weeks in period',
+                'monthly': 'Monthly: Compares period spend with monthly limit',
+                'total': 'Total: Compares all-time spend with total campaign budget'
             };
             document.getElementById('budget-type-hint').textContent = hints[type];
         }
@@ -381,10 +457,38 @@
         }
 
         function onPeriodChange() {
-            currentPeriod = document.getElementById('period-dropdown').value;
-            if (currentAccountId) {
+            const newPeriod = document.getElementById('period-dropdown').value;
+            
+            if (newPeriod === 'custom') {
+                document.getElementById('custom-date-range').classList.remove('hidden');
+                customDateFrom = document.getElementById('date-from').value;
+                customDateTo = document.getElementById('date-to').value;
+            } else {
+                document.getElementById('custom-date-range').classList.add('hidden');
+            }
+            
+            currentPeriod = newPeriod;
+            
+            if (currentAccountId && newPeriod !== 'custom') {
                 viewCampaigns(currentAccountId, currentAccountName);
             }
+        }
+
+        function onCustomDateChange() {
+            customDateFrom = document.getElementById('date-from').value;
+            customDateTo = document.getElementById('date-to').value;
+            
+            if (customDateFrom && customDateTo && currentAccountId) {
+                viewCampaigns(currentAccountId, currentAccountName);
+            }
+        }
+
+        // Build API date params for custom range
+        function getApiDateParams() {
+            if (currentPeriod === 'custom' && customDateFrom && customDateTo) {
+                return `time_range={'since':'${customDateFrom}','until':'${customDateTo}'}`;
+            }
+            return `date_preset=${currentPeriod}`;
         }
 
         // Data functions
@@ -426,13 +530,11 @@
         function renderAccounts(accounts) {
             const container = document.getElementById('accounts-list');
             
-            // Filter by active status
             let filteredAccounts = accounts;
             if (showActiveAccountsOnly) {
                 filteredAccounts = filteredAccounts.filter(a => a.account_status === 1);
             }
             
-            // Filter by search
             if (accountSearchQuery) {
                 filteredAccounts = filteredAccounts.filter(a => 
                     (a.name || '').toLowerCase().includes(accountSearchQuery) ||
@@ -509,9 +611,16 @@
             document.getElementById('campaign-search-input').value = '';
 
             try {
-                // Fetch campaigns with period insights
+                // Build the insights query based on period
+                let insightsParam;
+                if (currentPeriod === 'custom' && customDateFrom && customDateTo) {
+                    insightsParam = `insights.time_range({"since":"${customDateFrom}","until":"${customDateTo}"}){spend,impressions,clicks,cpc,ctr,actions}`;
+                } else {
+                    insightsParam = `insights.date_preset(${currentPeriod}){spend,impressions,clicks,cpc,ctr,actions}`;
+                }
+
                 const response = await fetch(
-                    `https://graph.facebook.com/v19.0/${accountId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time,insights.date_preset(${currentPeriod}){spend,impressions,clicks,cpc,ctr,actions}&limit=100&access_token=${accessToken}`
+                    `https://graph.facebook.com/v19.0/${accountId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time,${insightsParam}&limit=100&access_token=${accessToken}`
                 );
                 const data = await response.json();
 
@@ -525,7 +634,6 @@
                 );
                 const todayData = await todayResponse.json();
 
-                // Build today's spend cache
                 todayInsightsCache = {};
                 if (todayData.data) {
                     todayData.data.forEach(c => {
@@ -559,8 +667,8 @@
 
             if (budget <= 0) return null;
 
-            const today = new Date();
-            const daysInPeriod = getPeriodDays(currentPeriod);
+            const totalDaysInPeriod = getTotalDaysInPeriod(currentPeriod);
+            const daysElapsed = getDaysElapsedInPeriod(currentPeriod);
             
             let result = {
                 periodSpend,
@@ -572,86 +680,94 @@
                 pacingPercent: 0,
                 pacingStatus: 'on-track',
                 displaySpend: 0,
-                displayBudget: budget
+                displayBudget: budget,
+                totalDaysInPeriod,
+                daysElapsed
             };
 
             if (budgetType === 'daily') {
-                // Daily budget: progress bar shows today's spend vs daily budget
+                // Daily budget
+                // Progress bar: today's spend vs daily budget
                 result.displaySpend = todaySpend;
                 result.displayBudget = budget;
                 result.spendPercent = (todaySpend / budget) * 100;
                 
-                // Expected spend for the period = daily budget × days in period
-                result.expectedSpend = budget * daysInPeriod;
+                // Expected for entire period = daily budget × total days in period
+                result.expectedSpend = budget * (totalDaysInPeriod || 30);
                 
-                // Pacing: actual period spend vs expected period spend
+                // Pacing: period spend vs expected spend
                 result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
                 
             } else if (budgetType === 'weekly') {
                 // Weekly budget
-                const dayOfWeek = today.getDay() || 7; // 1-7 (Monday = 1, Sunday = 7)
-                result.expectedSpend = (budget / 7) * dayOfWeek;
+                const weeksInPeriod = (totalDaysInPeriod || 30) / 7;
+                result.expectedSpend = budget * weeksInPeriod;
                 result.displaySpend = periodSpend;
-                result.spendPercent = (periodSpend / budget) * 100;
-                result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
+                result.spendPercent = (periodSpend / result.expectedSpend) * 100;
+                result.pacingPercent = result.spendPercent;
                 
             } else if (budgetType === 'monthly') {
-                // Monthly budget
-                const dayOfMonth = today.getDate();
-                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-                result.expectedSpend = (budget / daysInMonth) * dayOfMonth;
+                // Monthly budget - compare period spend with monthly budget
+                result.expectedSpend = budget;
                 result.displaySpend = periodSpend;
+                result.displayBudget = budget;
                 result.spendPercent = (periodSpend / budget) * 100;
-                result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
+                result.pacingPercent = result.spendPercent;
                 
             } else {
                 // Total campaign budget
                 result.displaySpend = periodSpend;
+                result.expectedSpend = budget;
                 result.spendPercent = (periodSpend / budget) * 100;
-                result.pacingPercent = 100; // No pacing for total budget
+                result.pacingPercent = result.spendPercent;
             }
 
-            // Determine pacing status
-            if (result.pacingPercent > 115) {
-                result.pacingStatus = 'overspending';
-            } else if (result.pacingPercent < 85) {
+            // Determine pacing status based on new thresholds
+            // < 80% = Severely Underspending
+            // 80-95% = Underspending
+            // 95-105% = On track
+            // > 105% = Overspending
+            if (result.pacingPercent < 80) {
+                result.pacingStatus = 'severely-underspending';
+            } else if (result.pacingPercent < 95) {
                 result.pacingStatus = 'underspending';
-            } else {
+            } else if (result.pacingPercent <= 105) {
                 result.pacingStatus = 'on-track';
+            } else {
+                result.pacingStatus = 'overspending';
             }
 
             return result;
         }
 
         function renderCampaigns(campaigns) {
-            // Filter by active status
             let filteredCampaigns = campaigns;
             if (showActiveCampaignsOnly) {
                 filteredCampaigns = filteredCampaigns.filter(c => c.status === 'ACTIVE');
             }
             
-            // Filter by search
             if (campaignSearchQuery) {
                 filteredCampaigns = filteredCampaigns.filter(c => 
                     (c.name || '').toLowerCase().includes(campaignSearchQuery)
                 );
             }
 
-            // Calculate totals (from filtered)
             let totalSpend = 0;
-            let totalBudget = 0;
+            let totalExpected = 0;
             
             filteredCampaigns.forEach(c => {
                 const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
                 totalSpend += spend;
-                const budget = budgets[c.id]?.mediaPlanBudget || 0;
-                totalBudget += budget;
+                const budgetInfo = budgets[c.id] || {};
+                const pacing = calculatePacing(c, budgetInfo);
+                if (pacing) {
+                    totalExpected += pacing.expectedSpend;
+                }
             });
 
             const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE').length;
             const totalCampaigns = campaigns.length;
 
-            // Render summary
             document.getElementById('account-summary').innerHTML = `
                 <div class="grid grid-cols-4 gap-6">
                     <div>
@@ -663,18 +779,18 @@
                         <p class="text-3xl font-bold text-emerald-600">${activeCampaigns}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-500 mb-1">Spend (${periodLabels[currentPeriod]})</p>
+                        <p class="text-sm text-slate-500 mb-1">Spend (${getPeriodLabel()})</p>
                         <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalSpend)}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-500 mb-1">Total Budget Set</p>
-                        <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalBudget)}</p>
+                        <p class="text-sm text-slate-500 mb-1">Expected for Period</p>
+                        <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalExpected)}</p>
                     </div>
                 </div>
             `;
 
             document.getElementById('campaigns-count').textContent = 
-                `Showing ${filteredCampaigns.length} of ${totalCampaigns} campaigns • ${periodLabels[currentPeriod]}`;
+                `Showing ${filteredCampaigns.length} of ${totalCampaigns} campaigns • ${getPeriodLabel()}`;
 
             if (filteredCampaigns.length === 0) {
                 document.getElementById('campaigns-list').classList.add('hidden');
@@ -707,21 +823,32 @@
                 let budgetSection = '';
                 if (pacing && pacing.budget > 0) {
                     let progressColor = 'bg-emerald-500';
-                    if (pacing.spendPercent >= 80) progressColor = 'bg-amber-500';
-                    if (pacing.spendPercent >= 100) progressColor = 'bg-red-500';
+                    if (pacing.spendPercent >= 80 && pacing.spendPercent < 95) progressColor = 'bg-amber-500';
+                    if (pacing.spendPercent >= 95) progressColor = 'bg-emerald-500';
+                    if (pacing.spendPercent > 105) progressColor = 'bg-red-500';
 
-                    let pacingIcon = '✓';
-                    let pacingColor = 'text-emerald-600 bg-emerald-50';
-                    let pacingText = 'On track';
-                    
-                    if (pacing.pacingStatus === 'overspending') {
-                        pacingIcon = '↑';
-                        pacingColor = 'text-red-600 bg-red-50';
-                        pacingText = 'Overspending';
-                    } else if (pacing.pacingStatus === 'underspending') {
-                        pacingIcon = '↓';
-                        pacingColor = 'text-amber-600 bg-amber-50';
-                        pacingText = 'Underspending';
+                    let pacingIcon, pacingColor, pacingText;
+                    switch(pacing.pacingStatus) {
+                        case 'severely-underspending':
+                            pacingIcon = '↓↓';
+                            pacingColor = 'text-red-600 bg-red-50';
+                            pacingText = 'Severely Underspending';
+                            break;
+                        case 'underspending':
+                            pacingIcon = '↓';
+                            pacingColor = 'text-amber-600 bg-amber-50';
+                            pacingText = 'Underspending';
+                            break;
+                        case 'on-track':
+                            pacingIcon = '✓';
+                            pacingColor = 'text-emerald-600 bg-emerald-50';
+                            pacingText = 'On track';
+                            break;
+                        case 'overspending':
+                            pacingIcon = '↑';
+                            pacingColor = 'text-red-600 bg-red-50';
+                            pacingText = 'Overspending';
+                            break;
                     }
 
                     const budgetTypeLabels = {
@@ -735,35 +862,38 @@
                         <div class="mb-4 p-4 bg-slate-50 rounded-xl">
                             <div class="flex justify-between items-center mb-3">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-slate-700">${budgetTypeLabels[pacing.budgetType]} Budget Progress</span>
-                                    ${pacing.budgetType !== 'total' ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${pacingColor}">${pacingIcon} ${pacingText}</span>` : ''}
+                                    <span class="text-sm font-medium text-slate-700">${budgetTypeLabels[pacing.budgetType]} Budget</span>
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium ${pacingColor}">${pacingIcon} ${pacingText}</span>
                                 </div>
-                                <span class="text-sm font-bold ${pacing.spendPercent >= 100 ? 'text-red-600' : pacing.spendPercent >= 80 ? 'text-amber-600' : 'text-emerald-600'}">${pacing.spendPercent.toFixed(1)}%</span>
+                                <span class="text-sm font-bold ${pacing.pacingPercent > 105 ? 'text-red-600' : pacing.pacingPercent >= 95 ? 'text-emerald-600' : 'text-amber-600'}">${pacing.pacingPercent.toFixed(1)}%</span>
                             </div>
-                            <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
-                                <div class="h-full ${progressColor} rounded-full transition-all" style="width: ${Math.min(pacing.spendPercent, 100)}%"></div>
-                            </div>
-                            <div class="flex justify-between mt-2 text-sm">
-                                <span class="font-medium text-slate-900">${formatCurrency(pacing.displaySpend)} spent${pacing.budgetType === 'daily' ? ' today' : ''}</span>
-                                <span class="text-slate-500">${formatCurrency(pacing.displayBudget)} budget</span>
-                            </div>
+                            
                             ${pacing.budgetType === 'daily' ? `
-                                <div class="mt-3 pt-3 border-t border-slate-200 grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span class="text-slate-500">Period spend (${periodLabels[currentPeriod]})</span>
-                                        <p class="font-semibold text-slate-900">${formatCurrency(pacing.periodSpend)}</p>
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-slate-600">Today's Progress</span>
+                                        <span class="font-medium">${pacing.spendPercent.toFixed(1)}%</span>
                                     </div>
-                                    <div>
-                                        <span class="text-slate-500">Expected for period</span>
-                                        <p class="font-semibold ${pacing.pacingStatus === 'overspending' ? 'text-red-600' : pacing.pacingStatus === 'underspending' ? 'text-amber-600' : 'text-emerald-600'}">${formatCurrency(pacing.expectedSpend)} (${pacing.pacingPercent.toFixed(0)}%)</p>
+                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full ${pacing.spendPercent > 100 ? 'bg-red-500' : 'bg-indigo-500'} rounded-full transition-all" style="width: ${Math.min(pacing.spendPercent, 100)}%"></div>
                                     </div>
-                                </div>
-                            ` : (pacing.budgetType !== 'total' && pacing.expectedSpend > 0) ? `
-                                <div class="mt-3 pt-3 border-t border-slate-200 text-sm">
-                                    <span class="text-slate-500">Expected by now: </span>
-                                    <span class="font-semibold ${pacing.pacingStatus === 'overspending' ? 'text-red-600' : pacing.pacingStatus === 'underspending' ? 'text-amber-600' : 'text-emerald-600'}">${formatCurrency(pacing.expectedSpend)} (${pacing.pacingPercent.toFixed(0)}%)</span>
+                                    <div class="flex justify-between mt-1 text-xs text-slate-500">
+                                        <span>${formatCurrency(pacing.todaySpend)} spent today</span>
+                                        <span>${formatCurrency(pacing.budget)} daily budget</span>
+                                    </div>
                                 </div>
                             ` : ''}
+                            
+                            <div class="grid grid-cols-2 gap-4 text-sm ${pacing.budgetType === 'daily' ? 'pt-3 border-t border-slate-200' : ''}">
+                                <div>
+                                    <span class="text-slate-500">Period Spend</span>
+                                    <p class="font-semibold text-slate-900 text-lg">${formatCurrency(pacing.periodSpend)}</p>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500">Expected (${pacing.totalDaysInPeriod || '?'} days)</span>
+                                    <p class="font-semibold text-slate-900 text-lg">${formatCurrency(pacing.expectedSpend)}</p>
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else {
@@ -794,7 +924,7 @@
                         
                         <div class="grid grid-cols-5 gap-4">
                             <div class="bg-slate-50 rounded-lg p-3">
-                                <p class="text-xs text-slate-500 mb-1">Spend (${periodLabels[currentPeriod]})</p>
+                                <p class="text-xs text-slate-500 mb-1">Spend</p>
                                 <p class="text-lg font-bold text-slate-900">${formatCurrency(periodSpend)}</p>
                             </div>
                             <div class="bg-slate-50 rounded-lg p-3">
@@ -834,29 +964,18 @@
                 const pacing = calculatePacing(campaign, budgetInfo);
                 
                 if (pacing && pacing.budget > 0) {
-                    // Budget exceeded alert
-                    if (pacing.spendPercent >= 100) {
+                    if (pacing.pacingStatus === 'overspending') {
                         alerts.push({
                             type: 'critical',
-                            title: 'Budget Exceeded!',
-                            message: `"${campaign.name}" has spent ${formatCurrency(pacing.displaySpend)} (${pacing.spendPercent.toFixed(0)}% of ${formatCurrency(pacing.budget)} ${pacing.budgetType} budget)`,
-                            campaignId: campaign.id
-                        });
-                    } else if (pacing.spendPercent >= 80) {
-                        alerts.push({
-                            type: 'warning',
-                            title: 'Approaching Budget Limit',
-                            message: `"${campaign.name}" has spent ${formatCurrency(pacing.displaySpend)} (${pacing.spendPercent.toFixed(0)}% of ${formatCurrency(pacing.budget)} ${pacing.budgetType} budget)`,
-                            campaignId: campaign.id
-                        });
-                    }
-                    
-                    // Pacing alerts (only for non-total budgets)
-                    if (pacing.budgetType !== 'total' && pacing.pacingStatus === 'overspending' && pacing.pacingPercent > 130) {
-                        alerts.push({
-                            type: 'warning',
                             title: 'Overspending Alert',
-                            message: `"${campaign.name}" is spending ${pacing.pacingPercent.toFixed(0)}% faster than expected for the period`,
+                            message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedSpend)})`,
+                            campaignId: campaign.id
+                        });
+                    } else if (pacing.pacingStatus === 'severely-underspending') {
+                        alerts.push({
+                            type: 'warning',
+                            title: 'Severely Underspending',
+                            message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedSpend)})`,
                             campaignId: campaign.id
                         });
                     }
@@ -901,6 +1020,7 @@
             todayInsightsCache = {};
             document.getElementById('campaigns-section').classList.add('hidden');
             document.getElementById('alerts-section').classList.add('hidden');
+            document.getElementById('custom-date-range').classList.add('hidden');
             document.getElementById('account-search-input').value = '';
             accountSearchQuery = '';
             loadAdAccounts();
