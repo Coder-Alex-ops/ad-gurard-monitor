@@ -211,7 +211,7 @@
                         <option value="monthly">Monthly Budget</option>
                         <option value="total">Total Campaign Budget</option>
                     </select>
-                    <p class="text-xs text-slate-500 mt-2" id="budget-type-hint">Daily: Compares today's spend with daily limit</p>
+                    <p class="text-xs text-slate-500 mt-2" id="budget-type-hint">Daily: Expected = daily budget × days campaign is running</p>
                 </div>
             </div>
             <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3">
@@ -259,69 +259,108 @@
             'custom': 'Custom Range'
         };
 
-        // Get total days in period (for Expected calculation)
-        function getTotalDaysInPeriod(period) {
+        // Get period start and end dates
+        function getPeriodDates(period) {
             const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let start, end;
+            
             switch(period) {
-                case 'today': return 1;
-                case 'yesterday': return 1;
-                case 'last_7d': return 7;
-                case 'last_14d': return 14;
-                case 'this_month': 
-                    return new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-                case 'last_month': 
-                    return new Date(today.getFullYear(), today.getMonth(), 0).getDate();
-                case 'last_30d': return 30;
-                case 'last_90d': return 90;
+                case 'today':
+                    start = new Date(today);
+                    end = new Date(today);
+                    break;
+                case 'yesterday':
+                    start = new Date(today);
+                    start.setDate(start.getDate() - 1);
+                    end = new Date(start);
+                    break;
+                case 'last_7d':
+                    start = new Date(today);
+                    start.setDate(start.getDate() - 6);
+                    end = new Date(today);
+                    break;
+                case 'last_14d':
+                    start = new Date(today);
+                    start.setDate(start.getDate() - 13);
+                    end = new Date(today);
+                    break;
+                case 'this_month':
+                    start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'last_month':
+                    start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    end = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                case 'last_30d':
+                    start = new Date(today);
+                    start.setDate(start.getDate() - 29);
+                    end = new Date(today);
+                    break;
+                case 'last_90d':
+                    start = new Date(today);
+                    start.setDate(start.getDate() - 89);
+                    end = new Date(today);
+                    break;
                 case 'this_year':
-                    const startOfYear = new Date(today.getFullYear(), 0, 1);
-                    const endOfYear = new Date(today.getFullYear(), 11, 31);
-                    return Math.ceil((endOfYear - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+                    start = new Date(today.getFullYear(), 0, 1);
+                    end = new Date(today.getFullYear(), 11, 31);
+                    break;
                 case 'custom':
                     if (customDateFrom && customDateTo) {
-                        const from = new Date(customDateFrom);
-                        const to = new Date(customDateTo);
-                        return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+                        start = new Date(customDateFrom);
+                        end = new Date(customDateTo);
+                    } else {
+                        start = new Date(today.getFullYear(), today.getMonth(), 1);
+                        end = new Date(today);
                     }
-                    return 30;
-                case 'maximum': return null;
-                default: return 30;
+                    break;
+                default:
+                    start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    end = new Date(today);
             }
+            
+            return { start, end };
         }
 
-        // Get days elapsed in period (for progress calculation)
-        function getDaysElapsedInPeriod(period) {
+        // Calculate campaign active days within period
+        function getCampaignActiveDays(campaign, period) {
+            const { start: periodStart, end: periodEnd } = getPeriodDates(period);
             const today = new Date();
-            switch(period) {
-                case 'today': return 1;
-                case 'yesterday': return 1;
-                case 'last_7d': return 7;
-                case 'last_14d': return 14;
-                case 'this_month': return today.getDate();
-                case 'last_month': 
-                    return new Date(today.getFullYear(), today.getMonth(), 0).getDate();
-                case 'last_30d': return 30;
-                case 'last_90d': return 90;
-                case 'this_year': 
-                    const startOfYear = new Date(today.getFullYear(), 0, 1);
-                    return Math.ceil((today - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
-                case 'custom':
-                    if (customDateFrom && customDateTo) {
-                        const from = new Date(customDateFrom);
-                        const to = new Date(customDateTo);
-                        const now = new Date();
-                        if (now > to) {
-                            return Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
-                        } else if (now < from) {
-                            return 0;
-                        } else {
-                            return Math.ceil((now - from) / (1000 * 60 * 60 * 24)) + 1;
-                        }
-                    }
-                    return 30;
-                case 'maximum': return null;
-                default: return 30;
+            today.setHours(0, 0, 0, 0);
+            
+            // Campaign start date
+            const campaignStart = campaign.start_time ? new Date(campaign.start_time) : periodStart;
+            campaignStart.setHours(0, 0, 0, 0);
+            
+            // Campaign end date (or today if ongoing)
+            let campaignEnd;
+            if (campaign.stop_time) {
+                campaignEnd = new Date(campaign.stop_time);
+            } else {
+                campaignEnd = new Date(today);
             }
+            campaignEnd.setHours(0, 0, 0, 0);
+            
+            // Effective start = max(period start, campaign start)
+            const effectiveStart = new Date(Math.max(periodStart, campaignStart));
+            
+            // Effective end = min(period end, campaign end, today)
+            const effectiveEnd = new Date(Math.min(periodEnd, campaignEnd, today));
+            
+            // Days active
+            if (effectiveEnd < effectiveStart) return { daysActive: 0, daysRemaining: 0, totalDays: 0 };
+            
+            const daysActive = Math.ceil((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Days remaining in period (from today to period end)
+            const daysRemaining = Math.max(0, Math.ceil((periodEnd - today) / (1000 * 60 * 60 * 24)));
+            
+            // Total days in period
+            const totalDays = Math.ceil((periodEnd - periodStart) / (1000 * 60 * 60 * 24)) + 1;
+            
+            return { daysActive, daysRemaining, totalDays, effectiveStart, effectiveEnd };
         }
 
         // Format currency
@@ -366,7 +405,7 @@
         function updateBudgetHint() {
             const type = document.getElementById('budget-period').value;
             const hints = {
-                'daily': 'Daily: Expected = daily budget × days in period',
+                'daily': 'Daily: Expected = daily budget × days campaign is active in period',
                 'weekly': 'Weekly: Expected = weekly budget × weeks in period',
                 'monthly': 'Monthly: Compares period spend with monthly limit',
                 'total': 'Total: Compares all-time spend with total campaign budget'
@@ -481,14 +520,6 @@
             if (customDateFrom && customDateTo && currentAccountId) {
                 viewCampaigns(currentAccountId, currentAccountName);
             }
-        }
-
-        // Build API date params for custom range
-        function getApiDateParams() {
-            if (currentPeriod === 'custom' && customDateFrom && customDateTo) {
-                return `time_range={'since':'${customDateFrom}','until':'${customDateTo}'}`;
-            }
-            return `date_preset=${currentPeriod}`;
         }
 
         // Data functions
@@ -611,12 +642,11 @@
             document.getElementById('campaign-search-input').value = '';
 
             try {
-                // Build the insights query based on period
                 let insightsParam;
                 if (currentPeriod === 'custom' && customDateFrom && customDateTo) {
-                    insightsParam = `insights.time_range({"since":"${customDateFrom}","until":"${customDateTo}"}){spend,impressions,clicks,cpc,ctr,actions}`;
+                    insightsParam = `insights.time_range({"since":"${customDateFrom}","until":"${customDateTo}"}){spend,impressions}`;
                 } else {
-                    insightsParam = `insights.date_preset(${currentPeriod}){spend,impressions,clicks,cpc,ctr,actions}`;
+                    insightsParam = `insights.date_preset(${currentPeriod}){spend,impressions}`;
                 }
 
                 const response = await fetch(
@@ -628,7 +658,7 @@
                     throw new Error(data.error.message);
                 }
 
-                // Also fetch today's insights for daily budget comparison
+                // Fetch today's insights
                 const todayResponse = await fetch(
                     `https://graph.facebook.com/v19.0/${accountId}/campaigns?fields=id,insights.date_preset(today){spend}&limit=100&access_token=${accessToken}`
                 );
@@ -667,8 +697,7 @@
 
             if (budget <= 0) return null;
 
-            const totalDaysInPeriod = getTotalDaysInPeriod(currentPeriod);
-            const daysElapsed = getDaysElapsedInPeriod(currentPeriod);
+            const { daysActive, daysRemaining, totalDays } = getCampaignActiveDays(campaign, currentPeriod);
             
             let result = {
                 periodSpend,
@@ -676,68 +705,63 @@
                 budget,
                 budgetType,
                 spendPercent: 0,
-                expectedToDate: 0,      // Expected до момента (за pacing)
-                expectedTotal: 0,        // Expected за целия период (информативно)
+                expectedToDate: 0,
+                expectedTotal: 0,
+                projectedSpend: 0,
                 pacingPercent: 0,
                 pacingStatus: 'on-track',
                 displaySpend: 0,
                 displayBudget: budget,
-                totalDaysInPeriod,
-                daysElapsed
+                daysActive,
+                daysRemaining,
+                totalDays,
+                dailyAvgSpend: daysActive > 0 ? periodSpend / daysActive : 0
             };
 
             if (budgetType === 'daily') {
-                // Daily budget
-                // Progress bar: today's spend vs daily budget
                 result.displaySpend = todaySpend;
                 result.displayBudget = budget;
                 result.spendPercent = (todaySpend / budget) * 100;
                 
-                // Expected до момента = daily budget × days elapsed
-                result.expectedToDate = budget * (daysElapsed || 1);
+                // Expected to date = daily budget × days campaign was active
+                result.expectedToDate = budget * daysActive;
                 
-                // Expected за целия период (информативно)
-                result.expectedTotal = budget * (totalDaysInPeriod || 30);
+                // Expected total = daily budget × total days campaign will be active
+                result.expectedTotal = budget * totalDays;
                 
-                // Pacing: period spend vs expected TO DATE (not total)
+                // Projected spend = current spend + (daily budget × remaining days)
+                result.projectedSpend = periodSpend + (budget * daysRemaining);
+                
+                // Pacing based on expected to date
                 result.pacingPercent = result.expectedToDate > 0 ? (periodSpend / result.expectedToDate) * 100 : 0;
                 
             } else if (budgetType === 'weekly') {
-                // Weekly budget
-                const weeksElapsed = Math.max(1, Math.ceil(daysElapsed / 7));
-                const totalWeeks = Math.ceil((totalDaysInPeriod || 30) / 7);
+                const weeksActive = Math.max(1, Math.ceil(daysActive / 7));
+                const totalWeeks = Math.ceil(totalDays / 7);
                 
-                result.expectedToDate = budget * weeksElapsed;
+                result.expectedToDate = budget * weeksActive;
                 result.expectedTotal = budget * totalWeeks;
                 result.displaySpend = periodSpend;
+                result.projectedSpend = periodSpend + (result.dailyAvgSpend * daysRemaining);
                 result.pacingPercent = result.expectedToDate > 0 ? (periodSpend / result.expectedToDate) * 100 : 0;
                 
             } else if (budgetType === 'monthly') {
-                // Monthly budget
-                const today = new Date();
-                const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-                const dayOfMonth = today.getDate();
-                
-                // Expected до момента = (monthly budget / days in month) × days elapsed
-                result.expectedToDate = (budget / daysInMonth) * dayOfMonth;
+                result.expectedToDate = budget * (daysActive / totalDays);
                 result.expectedTotal = budget;
                 result.displaySpend = periodSpend;
                 result.displayBudget = budget;
+                result.projectedSpend = periodSpend + (result.dailyAvgSpend * daysRemaining);
                 result.pacingPercent = result.expectedToDate > 0 ? (periodSpend / result.expectedToDate) * 100 : 0;
                 
             } else {
-                // Total campaign budget
                 result.displaySpend = periodSpend;
-                result.expectedToDate = budget; // За total budget няма "до момента"
+                result.expectedToDate = budget;
                 result.expectedTotal = budget;
+                result.projectedSpend = periodSpend + (result.dailyAvgSpend * daysRemaining);
                 result.pacingPercent = budget > 0 ? (periodSpend / budget) * 100 : 0;
             }
 
-            // Determine pacing status based on thresholds
-            // < 80% = Severely Underspending
-            // 80-95% = Underspending
-            // 95-105% = On track
-            // > 105% = Overspending
+            // Pacing status
             if (result.pacingPercent < 80) {
                 result.pacingStatus = 'severely-underspending';
             } else if (result.pacingPercent < 95) {
@@ -749,6 +773,11 @@
             }
 
             return result;
+        }
+
+        // Simulate projected spend with new daily budget
+        function simulateProjectedSpend(pacing, newDailyBudget) {
+            return pacing.periodSpend + (newDailyBudget * pacing.daysRemaining);
         }
 
         function renderCampaigns(campaigns) {
@@ -765,7 +794,7 @@
 
             let totalSpend = 0;
             let totalExpectedToDate = 0;
-            let totalExpectedTotal = 0;
+            let totalProjected = 0;
             
             filteredCampaigns.forEach(c => {
                 const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
@@ -774,7 +803,7 @@
                 const pacing = calculatePacing(c, budgetInfo);
                 if (pacing) {
                     totalExpectedToDate += pacing.expectedToDate;
-                    totalExpectedTotal += pacing.expectedTotal;
+                    totalProjected += pacing.projectedSpend;
                 }
             });
 
@@ -782,14 +811,10 @@
             const totalCampaigns = campaigns.length;
 
             document.getElementById('account-summary').innerHTML = `
-                <div class="grid grid-cols-5 gap-6">
+                <div class="grid grid-cols-4 gap-6">
                     <div>
-                        <p class="text-sm text-slate-500 mb-1">Total Campaigns</p>
-                        <p class="text-3xl font-bold text-slate-900">${totalCampaigns}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-500 mb-1">Active</p>
-                        <p class="text-3xl font-bold text-emerald-600">${activeCampaigns}</p>
+                        <p class="text-sm text-slate-500 mb-1">Campaigns (Active)</p>
+                        <p class="text-3xl font-bold text-slate-900">${totalCampaigns} <span class="text-emerald-600">(${activeCampaigns})</span></p>
                     </div>
                     <div>
                         <p class="text-sm text-slate-500 mb-1">Spend (${getPeriodLabel()})</p>
@@ -800,14 +825,14 @@
                         <p class="text-3xl font-bold text-slate-900">${formatCurrency(totalExpectedToDate)}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-500 mb-1">Expected Total</p>
-                        <p class="text-3xl font-bold text-slate-500">${formatCurrency(totalExpectedTotal)}</p>
+                        <p class="text-sm text-slate-500 mb-1">Projected End</p>
+                        <p class="text-3xl font-bold text-indigo-600">${formatCurrency(totalProjected)}</p>
                     </div>
                 </div>
             `;
 
             document.getElementById('campaigns-count').textContent = 
-                `Showing ${filteredCampaigns.length} of ${totalCampaigns} campaigns • ${getPeriodLabel()}`;
+                `Showing ${filteredCampaigns.length} of ${totalCampaigns} • ${getPeriodLabel()}`;
 
             if (filteredCampaigns.length === 0) {
                 document.getElementById('campaigns-list').classList.add('hidden');
@@ -821,11 +846,7 @@
 
             document.getElementById('campaigns-list').innerHTML = filteredCampaigns.map(campaign => {
                 const periodSpend = parseFloat(campaign.insights?.data?.[0]?.spend || 0);
-                const todaySpend = todayInsightsCache[campaign.id] || 0;
                 const impressions = parseInt(campaign.insights?.data?.[0]?.impressions || 0);
-                const clicks = parseInt(campaign.insights?.data?.[0]?.clicks || 0);
-                const cpc = parseFloat(campaign.insights?.data?.[0]?.cpc || 0);
-                const ctr = parseFloat(campaign.insights?.data?.[0]?.ctr || 0);
                 
                 const budgetInfo = budgets[campaign.id] || {};
                 const pacing = calculatePacing(campaign, budgetInfo);
@@ -837,13 +858,11 @@
                 const startDate = campaign.start_time ? new Date(campaign.start_time).toLocaleDateString() : 'N/A';
                 const endDate = campaign.stop_time ? new Date(campaign.stop_time).toLocaleDateString() : 'Ongoing';
 
+                // Meta daily budget
+                const metaDailyBudget = campaign.daily_budget ? (parseInt(campaign.daily_budget) / 100) : null;
+
                 let budgetSection = '';
                 if (pacing && pacing.budget > 0) {
-                    let progressColor = 'bg-emerald-500';
-                    if (pacing.spendPercent >= 80 && pacing.spendPercent < 95) progressColor = 'bg-amber-500';
-                    if (pacing.spendPercent >= 95) progressColor = 'bg-emerald-500';
-                    if (pacing.spendPercent > 105) progressColor = 'bg-red-500';
-
                     let pacingIcon, pacingColor, pacingText;
                     switch(pacing.pacingStatus) {
                         case 'severely-underspending':
@@ -875,52 +894,80 @@
                         'total': 'Total'
                     };
 
+                    let progressColor = 'bg-emerald-500';
+                    if (pacing.pacingPercent < 80) progressColor = 'bg-red-500';
+                    else if (pacing.pacingPercent < 95) progressColor = 'bg-amber-500';
+                    else if (pacing.pacingPercent > 105) progressColor = 'bg-red-500';
+
                     budgetSection = `
                         <div class="mb-4 p-4 bg-slate-50 rounded-xl">
                             <div class="flex justify-between items-center mb-3">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-slate-700">${budgetTypeLabels[pacing.budgetType]} Budget</span>
+                                    <span class="text-sm font-medium text-slate-700">${budgetTypeLabels[pacing.budgetType]} Budget: ${formatCurrency(pacing.budget)}</span>
                                     <span class="px-2 py-0.5 rounded-full text-xs font-medium ${pacingColor}">${pacingIcon} ${pacingText}</span>
                                 </div>
-                                <span class="text-sm font-bold ${pacing.pacingPercent > 105 ? 'text-red-600' : pacing.pacingPercent >= 95 ? 'text-emerald-600' : 'text-amber-600'}">${pacing.pacingPercent.toFixed(1)}%</span>
+                                <span class="text-sm font-bold ${pacing.pacingPercent >= 95 && pacing.pacingPercent <= 105 ? 'text-emerald-600' : pacing.pacingPercent > 105 ? 'text-red-600' : 'text-amber-600'}">${pacing.pacingPercent.toFixed(1)}%</span>
                             </div>
                             
-                            ${pacing.budgetType === 'daily' ? `
-                                <div class="mb-3">
-                                    <div class="flex justify-between text-sm mb-1">
-                                        <span class="text-slate-600">Today's Progress</span>
-                                        <span class="font-medium">${pacing.spendPercent.toFixed(1)}%</span>
-                                    </div>
-                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div class="h-full ${pacing.spendPercent > 100 ? 'bg-red-500' : 'bg-indigo-500'} rounded-full transition-all" style="width: ${Math.min(pacing.spendPercent, 100)}%"></div>
-                                    </div>
-                                    <div class="flex justify-between mt-1 text-xs text-slate-500">
-                                        <span>${formatCurrency(pacing.todaySpend)} spent today</span>
-                                        <span>${formatCurrency(pacing.budget)} daily budget</span>
-                                    </div>
-                                </div>
-                            ` : ''}
+                            <div class="h-2 bg-slate-200 rounded-full overflow-hidden mb-4">
+                                <div class="h-full ${progressColor} rounded-full transition-all" style="width: ${Math.min(pacing.pacingPercent, 100)}%"></div>
+                            </div>
                             
-                            <div class="grid grid-cols-3 gap-4 text-sm ${pacing.budgetType === 'daily' ? 'pt-3 border-t border-slate-200' : ''}">
-                                <div>
-                                    <span class="text-slate-500">Period Spend</span>
-                                    <p class="font-semibold text-slate-900 text-lg">${formatCurrency(pacing.periodSpend)}</p>
+                            <div class="grid grid-cols-4 gap-3 text-sm">
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Period Spend</span>
+                                    <p class="font-bold text-slate-900">${formatCurrency(pacing.periodSpend)}</p>
                                 </div>
-                                <div>
-                                    <span class="text-slate-500">Expected to date (${pacing.daysElapsed} days)</span>
-                                    <p class="font-semibold ${pacing.pacingStatus === 'on-track' ? 'text-emerald-600' : pacing.pacingStatus === 'overspending' ? 'text-red-600' : 'text-amber-600'} text-lg">${formatCurrency(pacing.expectedToDate)}</p>
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Expected (${pacing.daysActive}d)</span>
+                                    <p class="font-bold ${pacing.pacingStatus === 'on-track' ? 'text-emerald-600' : pacing.pacingStatus === 'overspending' ? 'text-red-600' : 'text-amber-600'}">${formatCurrency(pacing.expectedToDate)}</p>
                                 </div>
-                                <div>
-                                    <span class="text-slate-500">Expected total (${pacing.totalDaysInPeriod} days)</span>
-                                    <p class="font-semibold text-slate-500 text-lg">${formatCurrency(pacing.expectedTotal)}</p>
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Daily Avg</span>
+                                    <p class="font-bold text-slate-900">${formatCurrency(pacing.dailyAvgSpend)}</p>
                                 </div>
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Impressions</span>
+                                    <p class="font-bold text-slate-900">${impressions.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Projected Spend Section -->
+                            <div class="mt-4 pt-4 border-t border-slate-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">Projected Spend (${pacing.daysRemaining} days left)</span>
+                                    <span class="text-lg font-bold text-indigo-600">${formatCurrency(pacing.projectedSpend)}</span>
+                                </div>
+                                
+                                ${pacing.budgetType === 'daily' ? `
+                                <div class="flex items-center gap-3 mt-3 p-3 bg-indigo-50 rounded-lg">
+                                    <span class="text-sm text-indigo-700">💡 Simulate new daily:</span>
+                                    <input type="number" 
+                                        id="sim-${campaign.id}" 
+                                        value="${metaDailyBudget || pacing.budget}" 
+                                        onchange="updateSimulation('${campaign.id}', this.value, ${pacing.periodSpend}, ${pacing.daysRemaining})"
+                                        class="w-24 px-3 py-1.5 border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <span class="text-sm text-indigo-700">→</span>
+                                    <span id="sim-result-${campaign.id}" class="text-sm font-bold text-indigo-700">${formatCurrency(pacing.projectedSpend)}</span>
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
                     `;
                 } else {
                     budgetSection = `
                         <div class="mb-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                            <p class="text-sm text-amber-700">⚠️ No media plan budget set. Click "Set Budget" to enable spend tracking and alerts.</p>
+                            <p class="text-sm text-amber-700">⚠️ No media plan budget set. Click "Set Budget" to enable spend tracking.</p>
+                            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Period Spend</span>
+                                    <p class="font-bold text-slate-900">${formatCurrency(periodSpend)}</p>
+                                </div>
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Impressions</span>
+                                    <p class="font-bold text-slate-900">${impressions.toLocaleString()}</p>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
@@ -933,7 +980,7 @@
                                     <h3 class="font-semibold text-slate-900">${campaign.name}</h3>
                                     <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor}">${campaign.status}</span>
                                 </div>
-                                <p class="text-sm text-slate-500">${campaign.objective || 'No objective'} • ${startDate} - ${endDate}</p>
+                                <p class="text-sm text-slate-500">${startDate} - ${endDate}${metaDailyBudget ? ' • Meta daily: ' + formatCurrency(metaDailyBudget) : ''}</p>
                             </div>
                             <button onclick="openBudgetModal('${campaign.id}', '${campaign.name.replace(/'/g, "\\'")}')" 
                                 class="px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
@@ -942,34 +989,17 @@
                         </div>
                         
                         ${budgetSection}
-                        
-                        <div class="grid grid-cols-5 gap-4">
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <p class="text-xs text-slate-500 mb-1">Spend</p>
-                                <p class="text-lg font-bold text-slate-900">${formatCurrency(periodSpend)}</p>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <p class="text-xs text-slate-500 mb-1">Impressions</p>
-                                <p class="text-lg font-bold text-slate-900">${impressions.toLocaleString()}</p>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <p class="text-xs text-slate-500 mb-1">Clicks</p>
-                                <p class="text-lg font-bold text-slate-900">${clicks.toLocaleString()}</p>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <p class="text-xs text-slate-500 mb-1">CPC</p>
-                                <p class="text-lg font-bold text-slate-900">${formatCurrency(cpc)}</p>
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-3">
-                                <p class="text-xs text-slate-500 mb-1">CTR</p>
-                                <p class="text-lg font-bold text-slate-900">${ctr.toFixed(2)}%</p>
-                            </div>
-                        </div>
                     </div>
                 `;
             }).join('');
 
             document.getElementById('campaigns-section').classList.remove('hidden');
+        }
+
+        // Update simulation result
+        function updateSimulation(campaignId, newBudget, currentSpend, daysRemaining) {
+            const projected = parseFloat(currentSpend) + (parseFloat(newBudget) * parseInt(daysRemaining));
+            document.getElementById(`sim-result-${campaignId}`).textContent = formatCurrency(projected);
         }
 
         function checkBudgetAlerts(campaigns) {
@@ -989,14 +1019,14 @@
                         alerts.push({
                             type: 'critical',
                             title: 'Overspending Alert',
-                            message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)} expected to date)`,
+                            message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)})`,
                             campaignId: campaign.id
                         });
                     } else if (pacing.pacingStatus === 'severely-underspending') {
                         alerts.push({
                             type: 'warning',
                             title: 'Severely Underspending',
-                            message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected spend (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)} expected to date)`,
+                            message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)})`,
                             campaignId: campaign.id
                         });
                     }
