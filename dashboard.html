@@ -919,16 +919,16 @@
                                     <p class="font-bold text-slate-900">${formatCurrency(pacing.periodSpend)}</p>
                                 </div>
                                 <div class="bg-white rounded-lg p-3">
-                                    <span class="text-slate-500 text-xs">Expected (${pacing.daysActive}d)</span>
+                                    <span class="text-slate-500 text-xs">Expected to date (${pacing.daysActive}d)</span>
                                     <p class="font-bold ${pacing.pacingStatus === 'on-track' ? 'text-emerald-600' : pacing.pacingStatus === 'overspending' ? 'text-red-600' : 'text-amber-600'}">${formatCurrency(pacing.expectedToDate)}</p>
+                                </div>
+                                <div class="bg-white rounded-lg p-3">
+                                    <span class="text-slate-500 text-xs">Expected total (${pacing.totalDays}d)</span>
+                                    <p class="font-bold text-slate-900">${formatCurrency(pacing.expectedTotal)}</p>
                                 </div>
                                 <div class="bg-white rounded-lg p-3">
                                     <span class="text-slate-500 text-xs">Daily Avg</span>
                                     <p class="font-bold text-slate-900">${formatCurrency(pacing.dailyAvgSpend)}</p>
-                                </div>
-                                <div class="bg-white rounded-lg p-3">
-                                    <span class="text-slate-500 text-xs">Impressions</span>
-                                    <p class="font-bold text-slate-900">${impressions.toLocaleString()}</p>
                                 </div>
                             </div>
                             
