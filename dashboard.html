@@ -74,6 +74,16 @@
                 
                 <!-- Filters -->
                 <div id="filters-section" class="flex items-center gap-3 flex-wrap">
+                    <!-- Search Box (for accounts) -->
+                    <div id="accounts-search" class="relative">
+                        <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="account-search-input" placeholder="Search accounts..." 
+                            onkeyup="onAccountSearch()" 
+                            class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
                     <!-- Active Only Toggle (for accounts) -->
                     <div id="accounts-filter" class="flex items-center gap-2">
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -85,6 +95,16 @@
                     
                     <!-- Campaign Filters (hidden by default) -->
                     <div id="campaigns-filters" class="hidden flex items-center gap-3">
+                        <!-- Campaign Search -->
+                        <div class="relative">
+                            <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" id="campaign-search-input" placeholder="Search campaigns..." 
+                                onkeyup="onCampaignSearch()" 
+                                class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        
                         <!-- Active Only Toggle -->
                         <div class="flex items-center gap-2">
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -205,6 +225,8 @@
         let currentPeriod = 'this_month';
         let showActiveAccountsOnly = true;
         let showActiveCampaignsOnly = true;
+        let accountSearchQuery = '';
+        let campaignSearchQuery = '';
         let budgets = {};
         let currentEditingCampaign = null;
         let accountsCache = null;
@@ -224,17 +246,23 @@
             'maximum': 'All Time'
         };
 
-        const periodDays = {
-            'today': 1,
-            'yesterday': 1,
-            'last_7d': 7,
-            'last_14d': 14,
-            'this_month': new Date().getDate(),
-            'last_month': new Date(new Date().getFullYear(), new Date().getMonth(), 0).getDate(),
-            'last_30d': 30,
-            'last_90d': 90,
-            'maximum': null
-        };
+        // Get number of days in current period
+        function getPeriodDays(period) {
+            const today = new Date();
+            switch(period) {
+                case 'today': return 1;
+                case 'yesterday': return 1;
+                case 'last_7d': return 7;
+                case 'last_14d': return 14;
+                case 'this_month': return today.getDate(); // Days elapsed this month
+                case 'last_month': 
+                    return new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+                case 'last_30d': return 30;
+                case 'last_90d': return 90;
+                case 'maximum': return null;
+                default: return 30;
+            }
+        }
 
         // Format currency
         function formatCurrency(amount) {
@@ -256,16 +284,15 @@
                 loadAdAccounts();
             }
 
-            // Budget type hint
             document.getElementById('budget-period').addEventListener('change', updateBudgetHint);
         };
 
         function updateBudgetHint() {
             const type = document.getElementById('budget-period').value;
             const hints = {
-                'daily': 'Daily: Compares today\'s spend with daily limit. Shows pacing for the period.',
-                'weekly': 'Weekly: Compares this week\'s spend with weekly limit.',
-                'monthly': 'Monthly: Compares this month\'s spend with monthly limit.',
+                'daily': 'Daily: Compares today\'s spend with daily limit. Shows pacing for the selected period.',
+                'weekly': 'Weekly: Compares current week\'s spend with weekly limit.',
+                'monthly': 'Monthly: Compares current month\'s spend with monthly limit.',
                 'total': 'Total: Compares all-time spend with total campaign budget.'
             };
             document.getElementById('budget-type-hint').textContent = hints[type];
@@ -322,6 +349,21 @@
             document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
         }
 
+        // Search handlers
+        function onAccountSearch() {
+            accountSearchQuery = document.getElementById('account-search-input').value.toLowerCase();
+            if (accountsCache) {
+                renderAccounts(accountsCache);
+            }
+        }
+
+        function onCampaignSearch() {
+            campaignSearchQuery = document.getElementById('campaign-search-input').value.toLowerCase();
+            if (campaignsCache) {
+                renderCampaigns(campaignsCache);
+            }
+        }
+
         // Filter handlers
         function onAccountsFilterChange() {
             showActiveAccountsOnly = document.getElementById('active-accounts-toggle').checked;
@@ -350,6 +392,7 @@
             showLoading();
             document.getElementById('page-title').textContent = 'Your Ad Accounts';
             document.getElementById('back-btn').classList.add('hidden');
+            document.getElementById('accounts-search').classList.remove('hidden');
             document.getElementById('accounts-filter').classList.remove('hidden');
             document.getElementById('campaigns-filters').classList.add('hidden');
 
@@ -383,16 +426,28 @@
         function renderAccounts(accounts) {
             const container = document.getElementById('accounts-list');
             
+            // Filter by active status
             let filteredAccounts = accounts;
             if (showActiveAccountsOnly) {
-                filteredAccounts = accounts.filter(a => a.account_status === 1);
+                filteredAccounts = filteredAccounts.filter(a => a.account_status === 1);
+            }
+            
+            // Filter by search
+            if (accountSearchQuery) {
+                filteredAccounts = filteredAccounts.filter(a => 
+                    (a.name || '').toLowerCase().includes(accountSearchQuery) ||
+                    (a.account_id || '').toLowerCase().includes(accountSearchQuery) ||
+                    (a.id || '').toLowerCase().includes(accountSearchQuery)
+                );
             }
 
             if (filteredAccounts.length === 0) {
                 document.getElementById('no-data').classList.remove('hidden');
-                document.getElementById('no-data-text').textContent = showActiveAccountsOnly 
-                    ? 'No active ad accounts found. Toggle "Active only" to see all accounts.'
-                    : 'No ad accounts found.';
+                document.getElementById('no-data-text').textContent = accountSearchQuery 
+                    ? `No accounts found matching "${accountSearchQuery}"`
+                    : (showActiveAccountsOnly 
+                        ? 'No active ad accounts found. Toggle "Active only" to see all accounts.'
+                        : 'No ad accounts found.');
                 container.classList.add('hidden');
                 return;
             }
@@ -405,7 +460,7 @@
                 const isActive = account.account_status === 1;
                 
                 return `
-                    <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-200">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer" onclick="viewCampaigns('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')">
                         <div class="flex items-start justify-between mb-5">
                             <div>
                                 <h3 class="font-bold text-slate-900 text-lg">${account.name || account.account_id}</h3>
@@ -429,10 +484,9 @@
                                 <p class="text-2xl font-bold text-slate-900">${account.currency}</p>
                             </div>
                         </div>
-                        <button onclick="viewCampaigns('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')" 
-                            class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+                        <div class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl text-center hover:bg-indigo-700 transition-colors">
                             View Campaigns
-                        </button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -443,13 +497,16 @@
         async function viewCampaigns(accountId, accountName) {
             currentAccountId = accountId;
             currentAccountName = accountName;
+            campaignSearchQuery = '';
             
             showLoading();
             document.getElementById('page-title').textContent = accountName;
             document.getElementById('back-btn').classList.remove('hidden');
             document.getElementById('accounts-list').classList.add('hidden');
+            document.getElementById('accounts-search').classList.add('hidden');
             document.getElementById('accounts-filter').classList.add('hidden');
             document.getElementById('campaigns-filters').classList.remove('hidden');
+            document.getElementById('campaign-search-input').value = '';
 
             try {
                 // Fetch campaigns with period insights
@@ -498,13 +555,12 @@
             const periodSpend = parseFloat(campaign.insights?.data?.[0]?.spend || 0);
             const todaySpend = todayInsightsCache[campaign.id] || 0;
             const budget = budgetInfo.mediaPlanBudget || 0;
-            const budgetType = budgetInfo.period || 'monthly';
+            const budgetType = budgetInfo.period || 'daily';
 
             if (budget <= 0) return null;
 
-            const daysInPeriod = periodDays[currentPeriod] || 30;
-            const startDate = campaign.start_time ? new Date(campaign.start_time) : null;
             const today = new Date();
+            const daysInPeriod = getPeriodDays(currentPeriod);
             
             let result = {
                 periodSpend,
@@ -520,20 +576,21 @@
             };
 
             if (budgetType === 'daily') {
-                // Daily budget: compare today's spend with daily budget
+                // Daily budget: progress bar shows today's spend vs daily budget
                 result.displaySpend = todaySpend;
                 result.displayBudget = budget;
                 result.spendPercent = (todaySpend / budget) * 100;
                 
-                // Calculate pacing for the period
+                // Expected spend for the period = daily budget × days in period
                 result.expectedSpend = budget * daysInPeriod;
+                
+                // Pacing: actual period spend vs expected period spend
                 result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
                 
             } else if (budgetType === 'weekly') {
                 // Weekly budget
-                const dayOfWeek = today.getDay() || 7; // 1-7
-                const expectedDailySpend = budget / 7;
-                result.expectedSpend = expectedDailySpend * dayOfWeek;
+                const dayOfWeek = today.getDay() || 7; // 1-7 (Monday = 1, Sunday = 7)
+                result.expectedSpend = (budget / 7) * dayOfWeek;
                 result.displaySpend = periodSpend;
                 result.spendPercent = (periodSpend / budget) * 100;
                 result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
@@ -551,17 +608,7 @@
                 // Total campaign budget
                 result.displaySpend = periodSpend;
                 result.spendPercent = (periodSpend / budget) * 100;
-                
-                // Calculate expected based on campaign duration
-                if (startDate) {
-                    const daysSinceStart = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
-                    const endDate = campaign.stop_time ? new Date(campaign.stop_time) : null;
-                    if (endDate) {
-                        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-                        result.expectedSpend = (budget / totalDays) * daysSinceStart;
-                        result.pacingPercent = result.expectedSpend > 0 ? (periodSpend / result.expectedSpend) * 100 : 0;
-                    }
-                }
+                result.pacingPercent = 100; // No pacing for total budget
             }
 
             // Determine pacing status
@@ -577,12 +624,20 @@
         }
 
         function renderCampaigns(campaigns) {
+            // Filter by active status
             let filteredCampaigns = campaigns;
             if (showActiveCampaignsOnly) {
-                filteredCampaigns = campaigns.filter(c => c.status === 'ACTIVE');
+                filteredCampaigns = filteredCampaigns.filter(c => c.status === 'ACTIVE');
+            }
+            
+            // Filter by search
+            if (campaignSearchQuery) {
+                filteredCampaigns = filteredCampaigns.filter(c => 
+                    (c.name || '').toLowerCase().includes(campaignSearchQuery)
+                );
             }
 
-            // Calculate totals
+            // Calculate totals (from filtered)
             let totalSpend = 0;
             let totalBudget = 0;
             
@@ -639,9 +694,6 @@
                 const cpc = parseFloat(campaign.insights?.data?.[0]?.cpc || 0);
                 const ctr = parseFloat(campaign.insights?.data?.[0]?.ctr || 0);
                 
-                const dailyBudget = campaign.daily_budget ? (parseInt(campaign.daily_budget) / 100) : null;
-                const lifetimeBudget = campaign.lifetime_budget ? (parseInt(campaign.lifetime_budget) / 100) : null;
-                
                 const budgetInfo = budgets[campaign.id] || {};
                 const pacing = calculatePacing(campaign, budgetInfo);
                 
@@ -684,7 +736,7 @@
                             <div class="flex justify-between items-center mb-3">
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm font-medium text-slate-700">${budgetTypeLabels[pacing.budgetType]} Budget Progress</span>
-                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium ${pacingColor}">${pacingIcon} ${pacingText}</span>
+                                    ${pacing.budgetType !== 'total' ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${pacingColor}">${pacingIcon} ${pacingText}</span>` : ''}
                                 </div>
                                 <span class="text-sm font-bold ${pacing.spendPercent >= 100 ? 'text-red-600' : pacing.spendPercent >= 80 ? 'text-amber-600' : 'text-emerald-600'}">${pacing.spendPercent.toFixed(1)}%</span>
                             </div>
@@ -703,14 +755,13 @@
                                     </div>
                                     <div>
                                         <span class="text-slate-500">Expected for period</span>
-                                        <p class="font-semibold text-slate-900">${formatCurrency(pacing.expectedSpend)}</p>
+                                        <p class="font-semibold ${pacing.pacingStatus === 'overspending' ? 'text-red-600' : pacing.pacingStatus === 'underspending' ? 'text-amber-600' : 'text-emerald-600'}">${formatCurrency(pacing.expectedSpend)} (${pacing.pacingPercent.toFixed(0)}%)</p>
                                     </div>
                                 </div>
-                            ` : pacing.expectedSpend > 0 ? `
+                            ` : (pacing.budgetType !== 'total' && pacing.expectedSpend > 0) ? `
                                 <div class="mt-3 pt-3 border-t border-slate-200 text-sm">
                                     <span class="text-slate-500">Expected by now: </span>
-                                    <span class="font-semibold ${pacing.pacingStatus === 'overspending' ? 'text-red-600' : pacing.pacingStatus === 'underspending' ? 'text-amber-600' : 'text-emerald-600'}">${formatCurrency(pacing.expectedSpend)}</span>
-                                    <span class="text-slate-500"> (${pacing.pacingPercent.toFixed(0)}% of expected)</span>
+                                    <span class="font-semibold ${pacing.pacingStatus === 'overspending' ? 'text-red-600' : pacing.pacingStatus === 'underspending' ? 'text-amber-600' : 'text-emerald-600'}">${formatCurrency(pacing.expectedSpend)} (${pacing.pacingPercent.toFixed(0)}%)</span>
                                 </div>
                             ` : ''}
                         </div>
@@ -783,6 +834,7 @@
                 const pacing = calculatePacing(campaign, budgetInfo);
                 
                 if (pacing && pacing.budget > 0) {
+                    // Budget exceeded alert
                     if (pacing.spendPercent >= 100) {
                         alerts.push({
                             type: 'critical',
@@ -799,12 +851,12 @@
                         });
                     }
                     
-                    // Pacing alerts
-                    if (pacing.pacingStatus === 'overspending' && pacing.pacingPercent > 130) {
+                    // Pacing alerts (only for non-total budgets)
+                    if (pacing.budgetType !== 'total' && pacing.pacingStatus === 'overspending' && pacing.pacingPercent > 130) {
                         alerts.push({
                             type: 'warning',
                             title: 'Overspending Alert',
-                            message: `"${campaign.name}" is spending ${pacing.pacingPercent.toFixed(0)}% faster than expected`,
+                            message: `"${campaign.name}" is spending ${pacing.pacingPercent.toFixed(0)}% faster than expected for the period`,
                             campaignId: campaign.id
                         });
                     }
@@ -849,6 +901,8 @@
             todayInsightsCache = {};
             document.getElementById('campaigns-section').classList.add('hidden');
             document.getElementById('alerts-section').classList.add('hidden');
+            document.getElementById('account-search-input').value = '';
+            accountSearchQuery = '';
             loadAdAccounts();
         }
 
