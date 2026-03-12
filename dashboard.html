@@ -1205,9 +1205,32 @@
             localStorage.setItem('campaign_budgets', JSON.stringify(budgets));
             closeBudgetModal();
             
+            // Sync budgets to Redis for cron job
+            syncBudgetsToServer();
+            
             if (currentAccountId && campaignsCache) {
                 renderCampaigns(campaignsCache);
                 checkBudgetAlerts(campaignsCache);
+            }
+        }
+        
+        async function syncBudgetsToServer() {
+            if (!notificationEmail) return; // Only sync if notifications are enabled
+            
+            try {
+                const accountIds = accountsCache ? accountsCache.map(a => a.id.replace('act_', '')) : [];
+                
+                await fetch('/api/notification-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: notificationEmail,
+                        accounts: accountIds,
+                        budgets: budgets
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to sync budgets:', error);
             }
         }
 
@@ -1221,7 +1244,7 @@
             document.getElementById('email-modal').classList.add('hidden');
         }
 
-        function saveEmailSettings() {
+        async function saveEmailSettings() {
             const email = document.getElementById('notification-email-input').value.trim();
             
             if (email && !isValidEmail(email)) {
@@ -1232,13 +1255,36 @@
             notificationEmail = email || null;
             localStorage.setItem('notification_email', notificationEmail || '');
             
+            // Save to Redis for cron job
+            try {
+                // Get all account IDs the user has access to
+                const accountIds = accountsCache ? accountsCache.map(a => a.id.replace('act_', '')) : [];
+                
+                const response = await fetch('/api/notification-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: notificationEmail,
+                        accounts: accountIds,
+                        budgets: budgets
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    console.error('Failed to save settings to server:', data.error);
+                }
+            } catch (error) {
+                console.error('Failed to save settings to server:', error);
+            }
+            
             // Update status indicator
             updateEmailStatusIndicator();
             
             closeEmailModal();
             
             if (notificationEmail) {
-                alert('Email notifications enabled! You will receive alerts for overspending and severely underspending campaigns.');
+                alert('Email notifications enabled! You will receive automatic alerts twice daily (9:00 AM and 6:00 PM UTC) for overspending and underspending campaigns.');
             }
         }
 
