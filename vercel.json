@@ -2,5 +2,11 @@
   "version": 2,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/check-budgets",
+      "schedule": "0 9,18 * * *"
+    }
   ]
 }
