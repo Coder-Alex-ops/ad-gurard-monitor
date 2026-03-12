@@ -44,6 +44,12 @@
                     <span class="font-bold text-slate-900 text-lg">AdGuard Budget Monitor</span>
                 </div>
                 <div class="flex items-center gap-4">
+                    <button onclick="openEmailSettings()" class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Email Notifications">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="email-status" class="w-2 h-2 rounded-full ${notificationEmail ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                    </button>
                     <button onclick="refreshData()" class="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                         <svg id="refresh-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -221,6 +227,31 @@
         </div>
     </div>
 
+    <!-- Email Settings Modal -->
+    <div id="email-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-xl font-bold text-slate-900">📧 Email Notifications</h2>
+                <p class="text-sm text-slate-500 mt-1">Get notified when campaigns overspend or underspend</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Notification Email</label>
+                    <input type="email" id="notification-email-input" placeholder="your@email.com" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-xs text-slate-500 mt-2">You'll receive alerts for overspending (>105%) and severely underspending (<80%)</p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <p class="text-sm text-amber-800">⚠️ <strong>Note:</strong> In test mode, emails can only be sent to the account owner's email address.</p>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3">
+                <button onclick="closeEmailModal()" class="flex-1 px-4 py-3 border border-slate-200 bg-white rounded-xl font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button onclick="testEmailNotification()" class="px-4 py-3 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-xl font-semibold hover:bg-indigo-100">Test</button>
+                <button onclick="saveEmailSettings()" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Configuration
         const META_APP_ID = '1237093665238006';
@@ -243,6 +274,8 @@
         let accountsCache = null;
         let campaignsCache = null;
         let todayInsightsCache = {};
+        let notificationEmail = null;
+        let sentAlerts = {}; // Track sent alerts to avoid duplicates
 
         // Period config
         const periodLabels = {
@@ -384,6 +417,23 @@
             
             if (savedBudgets) {
                 budgets = JSON.parse(savedBudgets);
+            }
+
+            // Load notification email
+            notificationEmail = localStorage.getItem('notification_email');
+            
+            // Load sent alerts tracking
+            const savedSentAlerts = localStorage.getItem('sent_alerts');
+            if (savedSentAlerts) {
+                sentAlerts = JSON.parse(savedSentAlerts);
+                // Clean old alerts (older than 24 hours)
+                const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                Object.keys(sentAlerts).forEach(key => {
+                    if (sentAlerts[key] < oneDayAgo) {
+                        delete sentAlerts[key];
+                    }
+                });
+                localStorage.setItem('sent_alerts', JSON.stringify(sentAlerts));
             }
 
             // Check for error in URL
@@ -1048,6 +1098,8 @@
                             message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)})`,
                             campaignId: campaign.id
                         });
+                        // Send email notification
+                        sendAlertEmail('overspending', campaign, pacing);
                     } else if (pacing.pacingStatus === 'severely-underspending') {
                         alerts.push({
                             type: 'warning',
@@ -1055,6 +1107,8 @@
                             message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)})`,
                             campaignId: campaign.id
                         });
+                        // Send email notification
+                        sendAlertEmail('severely-underspending', campaign, pacing);
                     }
                 }
             });
@@ -1154,6 +1208,124 @@
             if (currentAccountId && campaignsCache) {
                 renderCampaigns(campaignsCache);
                 checkBudgetAlerts(campaignsCache);
+            }
+        }
+
+        // Email Settings Functions
+        function openEmailSettings() {
+            document.getElementById('notification-email-input').value = notificationEmail || '';
+            document.getElementById('email-modal').classList.remove('hidden');
+        }
+
+        function closeEmailModal() {
+            document.getElementById('email-modal').classList.add('hidden');
+        }
+
+        function saveEmailSettings() {
+            const email = document.getElementById('notification-email-input').value.trim();
+            
+            if (email && !isValidEmail(email)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            notificationEmail = email || null;
+            localStorage.setItem('notification_email', notificationEmail || '');
+            
+            // Update status indicator
+            updateEmailStatusIndicator();
+            
+            closeEmailModal();
+            
+            if (notificationEmail) {
+                alert('Email notifications enabled! You will receive alerts for overspending and severely underspending campaigns.');
+            }
+        }
+
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function updateEmailStatusIndicator() {
+            const indicator = document.getElementById('email-status');
+            if (indicator) {
+                indicator.className = `w-2 h-2 rounded-full ${notificationEmail ? 'bg-emerald-500' : 'bg-slate-300'}`;
+            }
+        }
+
+        async function testEmailNotification() {
+            const email = document.getElementById('notification-email-input').value.trim();
+            
+            if (!email || !isValidEmail(email)) {
+                alert('Please enter a valid email address first');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: email,
+                        alertType: 'overspending',
+                        campaignName: 'Test Campaign',
+                        currentSpend: 150,
+                        expectedSpend: 100,
+                        pacingPercent: 150,
+                        accountName: 'Test Account'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Test email sent! Check your inbox.');
+                } else {
+                    alert('❌ Failed to send test email: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Test email error:', error);
+                alert('❌ Failed to send test email. Check console for details.');
+            }
+        }
+
+        async function sendAlertEmail(alertType, campaign, pacing) {
+            if (!notificationEmail) return;
+
+            // Create unique key for this alert (to avoid sending duplicates)
+            const alertKey = `${campaign.id}-${alertType}-${new Date().toDateString()}`;
+            
+            // Check if we already sent this alert today
+            if (sentAlerts[alertKey]) {
+                console.log('Alert already sent today:', alertKey);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: notificationEmail,
+                        alertType: alertType,
+                        campaignName: campaign.name,
+                        currentSpend: pacing.periodSpend,
+                        expectedSpend: pacing.expectedToDate,
+                        pacingPercent: pacing.pacingPercent,
+                        accountName: currentAccountName
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Alert email sent:', alertKey);
+                    // Mark this alert as sent
+                    sentAlerts[alertKey] = Date.now();
+                    localStorage.setItem('sent_alerts', JSON.stringify(sentAlerts));
+                }
+            } catch (error) {
+                console.error('Failed to send alert email:', error);
             }
         }
     </script>
