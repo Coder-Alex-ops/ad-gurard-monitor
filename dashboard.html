@@ -224,7 +224,7 @@
     <script>
         // Configuration
         const META_APP_ID = '1237093665238006';
-        const REDIRECT_URI = 'https://ad-gurard-monitor.vercel.app/auth/callback';
+        const REDIRECT_URI = 'https://ad-gurard-monitor.vercel.app/api/auth/callback';
         const CURRENCY_SYMBOL = '€';
         
         // State
@@ -379,18 +379,43 @@
         }
 
         // Initialize
-        window.onload = function() {
-            const savedToken = localStorage.getItem('meta_access_token');
+        window.onload = async function() {
             const savedBudgets = localStorage.getItem('campaign_budgets');
             
             if (savedBudgets) {
                 budgets = JSON.parse(savedBudgets);
             }
-            
-            if (savedToken) {
-                accessToken = savedToken;
-                showDashboard();
-                loadAdAccounts();
+
+            // Check for error in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            if (error) {
+                alert('Authentication error: ' + error);
+                window.history.replaceState({}, document.title, '/dashboard.html');
+            }
+
+            // Check session from backend
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                
+                if (data.authenticated && data.accessToken) {
+                    accessToken = data.accessToken;
+                    showDashboard();
+                    loadAdAccounts();
+                }
+            } catch (error) {
+                console.log('No active session');
+            }
+
+            // Fallback: check localStorage (for test token)
+            if (!accessToken) {
+                const savedToken = localStorage.getItem('meta_access_token');
+                if (savedToken) {
+                    accessToken = savedToken;
+                    showDashboard();
+                    loadAdAccounts();
+                }
             }
 
             document.getElementById('budget-period').addEventListener('change', updateBudgetHint);
@@ -428,7 +453,8 @@
         function logout() {
             localStorage.removeItem('meta_access_token');
             accessToken = null;
-            location.reload();
+            // Redirect to logout API (clears session cookie)
+            window.location.href = '/api/auth/logout';
         }
 
         function setTestToken() {
