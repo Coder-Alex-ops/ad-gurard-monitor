@@ -2,6 +2,7 @@
   "name": "ad-gurard-monitor",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vercel dev"
   },
@@ -10,3 +11,6 @@
     "resend": "^3.2.0"
   }
 }
+```
+
+4. **Commit changes**
