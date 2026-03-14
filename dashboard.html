@@ -120,6 +120,15 @@
                             <span class="text-sm text-slate-600">Active only</span>
                         </div>
                         
+                        <!-- Spending Only Toggle -->
+                        <div class="flex items-center gap-2">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="spending-campaigns-toggle" checked onchange="onCampaignsFilterChange()" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
+                            <span class="text-sm text-slate-600">Spending only</span>
+                        </div>
+                        
                         <!-- Period Selector -->
                         <select id="period-dropdown" onchange="onPeriodChange()" class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                             <option value="today">Today</option>
@@ -267,6 +276,7 @@
         let customDateTo = null;
         let showActiveAccountsOnly = true;
         let showActiveCampaignsOnly = true;
+        let showSpendingCampaignsOnly = true; // Show only campaigns with spend > €0.01
         let accountSearchQuery = '';
         let campaignSearchQuery = '';
         let budgets = {};
@@ -565,6 +575,7 @@
 
         function onCampaignsFilterChange() {
             showActiveCampaignsOnly = document.getElementById('active-campaigns-toggle').checked;
+            showSpendingCampaignsOnly = document.getElementById('spending-campaigns-toggle').checked;
             if (campaignsCache) {
                 renderCampaigns(campaignsCache);
                 checkBudgetAlerts(campaignsCache);
@@ -862,6 +873,13 @@
                 filteredCampaigns = filteredCampaigns.filter(c => c.status === 'ACTIVE');
             }
             
+            if (showSpendingCampaignsOnly) {
+                filteredCampaigns = filteredCampaigns.filter(c => {
+                    const spend = parseFloat(c.insights?.data?.[0]?.spend || 0);
+                    return spend > 0.01;
+                });
+            }
+            
             if (campaignSearchQuery) {
                 filteredCampaigns = filteredCampaigns.filter(c => 
                     (c.name || '').toLowerCase().includes(campaignSearchQuery)
@@ -1087,7 +1105,12 @@
             }
             
             filteredCampaigns.forEach(campaign => {
-                const budgetInfo = budgets[campaign.id] || {};
+                // Only check campaigns with Media Plan Budget set
+                const budgetInfo = budgets[campaign.id];
+                if (!budgetInfo || !budgetInfo.mediaPlanBudget) {
+                    return; // Skip campaigns without budget set
+                }
+                
                 const pacing = calculatePacing(campaign, budgetInfo);
                 
                 if (pacing && pacing.budget > 0) {
@@ -1098,17 +1121,16 @@
                             message: `"${campaign.name}" is at ${pacing.pacingPercent.toFixed(0)}% of expected (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)})`,
                             campaignId: campaign.id
                         });
-                        // Send email notification
-                        sendAlertEmail('overspending', campaign, pacing);
-                    } else if (pacing.pacingStatus === 'severely-underspending') {
+                        // Email notifications are sent via cron job at 20:00, not on dashboard load
+                    } else if (pacing.pacingStatus === 'severely-underspending' && pacing.periodSpend > 0.01) {
+                        // Only alert underspending if campaign has some spend (not completely paused)
                         alerts.push({
                             type: 'warning',
                             title: 'Severely Underspending',
                             message: `"${campaign.name}" is at only ${pacing.pacingPercent.toFixed(0)}% of expected (${formatCurrency(pacing.periodSpend)} / ${formatCurrency(pacing.expectedToDate)})`,
                             campaignId: campaign.id
                         });
-                        // Send email notification
-                        sendAlertEmail('severely-underspending', campaign, pacing);
+                        // Email notifications are sent via cron job at 20:00, not on dashboard load
                     }
                 }
             });
