@@ -199,15 +199,15 @@
     </div>
 
     <script>
-        // Initialize Supabase - ще се зареди от environment или hardcoded за сега
+        // Initialize Supabase
         const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_uJj_aUiagop3jgsM_yAzYg_bo0n2Npt';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Check if user is already logged in
         async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 // User is logged in, redirect to dashboard
                 window.location.href = '/dashboard.html';
@@ -282,7 +282,7 @@
             setLoading('login-btn', true);
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email,
                     password
                 });
@@ -319,7 +319,7 @@
             setLoading('register-btn', true);
 
             try {
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
                     options: {
@@ -334,7 +334,7 @@
 
                 // Create profile
                 if (data.user) {
-                    await supabase.from('profiles').insert({
+                    await supabaseClient.from('profiles').insert({
                         id: data.user.id,
                         email: email,
                         full_name: name,
@@ -366,7 +366,7 @@
             setLoading('forgot-btn', true);
 
             try {
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.origin + '/reset-password.html'
                 });
 
