@@ -3,57 +3,396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdGuard Budget Monitor</title>
+    <title>AdGuard Budget Monitor - SaaS Ad Budget Tracking</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>* { font-family: 'DM Sans', sans-serif; }</style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-    <div class="max-w-4xl mx-auto px-6 py-20">
-        <div class="text-center mb-16">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl shadow-lg shadow-indigo-500/30 mb-6">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-bold text-slate-900 mb-4">AdGuard Budget Monitor</h1>
-            <p class="text-xl text-slate-600 max-w-2xl mx-auto">Real-time ad spend monitoring for agencies. Never overspend again.</p>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6 mb-16">
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
-                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
-                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen">
+    
+    <!-- Main Container -->
+    <div class="min-h-screen flex">
+        
+        <!-- Left Side - Branding -->
+        <div class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-white text-xl">AdGuard Budget Monitor</span>
                 </div>
-                <h3 class="font-semibold text-slate-900 mb-2">Real-time Monitoring</h3>
-                <p class="text-slate-600 text-sm">Track spend across all your ad accounts in one dashboard.</p>
             </div>
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
-                <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
-                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            
+            <div>
+                <h1 class="text-4xl font-bold text-white mb-6 leading-tight">
+                    Track your ad spend.<br>
+                    <span class="text-indigo-400">Stay on budget.</span>
+                </h1>
+                <p class="text-slate-400 text-lg mb-8">
+                    Monitor your Meta, TikTok, and Google Ads campaigns in one dashboard. 
+                    Get real-time alerts when you're overspending or underspending.
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-white">Real-time budget tracking</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-white">Email alerts for overspending</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-white">Multi-platform support</span>
+                    </div>
                 </div>
-                <h3 class="font-semibold text-slate-900 mb-2">Smart Alerts</h3>
-                <p class="text-slate-600 text-sm">Get notified before you overspend with customizable thresholds.</p>
             </div>
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-shadow">
-                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-4">
-                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+            
+            <p class="text-slate-500 text-sm">© 2026 AdGuard Budget Monitor. All rights reserved.</p>
+        </div>
+        
+        <!-- Right Side - Auth Forms -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                
+                <!-- Logo for mobile -->
+                <div class="lg:hidden flex items-center justify-center gap-3 mb-8">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-slate-900 text-lg">AdGuard Budget Monitor</span>
                 </div>
-                <h3 class="font-semibold text-slate-900 mb-2">Auto-Pause</h3>
-                <p class="text-slate-600 text-sm">Automatically pause campaigns when they exceed budget.</p>
-            </div>
-        </div>
-        <div class="text-center">
-            <a href="/dashboard.html" class="inline-block px-8 py-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30">
-                Go to Dashboard
-            </a>
-        </div>
-        <div class="mt-20 pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
-            <p>&copy; 2025 AdGuard Budget Monitor. All rights reserved.</p>
-            <div class="mt-2 space-x-4">
-                <a href="/privacy.html" class="hover:text-indigo-600">Privacy Policy</a>
-                <a href="/terms.html" class="hover:text-indigo-600">Terms of Service</a>
+                
+                <!-- Login Form -->
+                <div id="login-form">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome back</h2>
+                    <p class="text-slate-500 mb-6">Sign in to your account to continue</p>
+                    
+                    <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                            <input type="email" id="login-email" placeholder="you@company.com" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                            <input type="password" id="login-password" placeholder="••••••••" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        
+                        <button onclick="handleLogin()" id="login-btn" 
+                            class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+                            Sign In
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <button onclick="showForgotPassword()" class="text-sm text-indigo-600 hover:text-indigo-700">
+                            Forgot your password?
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-slate-200 text-center">
+                        <p class="text-slate-500 text-sm">
+                            Don't have an account? 
+                            <button onclick="showRegister()" class="text-indigo-600 font-semibold hover:text-indigo-700">Sign up</button>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Register Form -->
+                <div id="register-form" class="hidden">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Create an account</h2>
+                    <p class="text-slate-500 mb-6">Start tracking your ad budgets today</p>
+                    
+                    <div id="register-error" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+                    <div id="register-success" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                            <input type="text" id="register-name" placeholder="John Doe" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Company Name (optional)</label>
+                            <input type="text" id="register-company" placeholder="Acme Inc." 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                            <input type="email" id="register-email" placeholder="you@company.com" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                            <input type="password" id="register-password" placeholder="Min. 8 characters" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        
+                        <button onclick="handleRegister()" id="register-btn" 
+                            class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+                            Create Account
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-slate-200 text-center">
+                        <p class="text-slate-500 text-sm">
+                            Already have an account? 
+                            <button onclick="showLogin()" class="text-indigo-600 font-semibold hover:text-indigo-700">Sign in</button>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Forgot Password Form -->
+                <div id="forgot-form" class="hidden">
+                    <button onclick="showLogin()" class="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back to login
+                    </button>
+                    
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2">Reset password</h2>
+                    <p class="text-slate-500 mb-6">Enter your email and we'll send you a reset link</p>
+                    
+                    <div id="forgot-error" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+                    <div id="forgot-success" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                            <input type="email" id="forgot-email" placeholder="you@company.com" 
+                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        
+                        <button onclick="handleForgotPassword()" id="forgot-btn" 
+                            class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+                            Send Reset Link
+                        </button>
+                    </div>
+                </div>
+                
             </div>
         </div>
     </div>
+
+    <script>
+        // Initialize Supabase - ще се зареди от environment или hardcoded за сега
+        const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_uJj_aUiagop3jgsM_yAzYg_bo0n2Npt';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check if user is already logged in
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                // User is logged in, redirect to dashboard
+                window.location.href = '/dashboard.html';
+            }
+        }
+
+        // Run on page load
+        checkAuth();
+
+        // Form navigation
+        function showLogin() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('forgot-form').classList.add('hidden');
+            clearErrors();
+        }
+
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            document.getElementById('forgot-form').classList.add('hidden');
+            clearErrors();
+        }
+
+        function showForgotPassword() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('forgot-form').classList.remove('hidden');
+            clearErrors();
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('[id$="-error"], [id$="-success"]').forEach(el => {
+                el.classList.add('hidden');
+                el.textContent = '';
+            });
+        }
+
+        function showError(formId, message) {
+            const errorEl = document.getElementById(`${formId}-error`);
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        function showSuccess(formId, message) {
+            const successEl = document.getElementById(`${formId}-success`);
+            successEl.textContent = message;
+            successEl.classList.remove('hidden');
+        }
+
+        function setLoading(buttonId, loading) {
+            const btn = document.getElementById(buttonId);
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            } else {
+                btn.disabled = false;
+            }
+        }
+
+        // Login handler
+        async function handleLogin() {
+            clearErrors();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                showError('login', 'Please fill in all fields');
+                return;
+            }
+
+            setLoading('login-btn', true);
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                // Redirect to dashboard
+                window.location.href = '/dashboard.html';
+            } catch (error) {
+                showError('login', error.message);
+                setLoading('login-btn', false);
+                document.getElementById('login-btn').textContent = 'Sign In';
+            }
+        }
+
+        // Register handler
+        async function handleRegister() {
+            clearErrors();
+            const name = document.getElementById('register-name').value.trim();
+            const company = document.getElementById('register-company').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+
+            if (!name || !email || !password) {
+                showError('register', 'Please fill in all required fields');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError('register', 'Password must be at least 8 characters');
+                return;
+            }
+
+            setLoading('register-btn', true);
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            company_name: company
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                // Create profile
+                if (data.user) {
+                    await supabase.from('profiles').insert({
+                        id: data.user.id,
+                        email: email,
+                        full_name: name,
+                        company_name: company
+                    });
+                }
+
+                showSuccess('register', 'Account created! Please check your email to confirm your account.');
+                setLoading('register-btn', false);
+                document.getElementById('register-btn').textContent = 'Create Account';
+                
+            } catch (error) {
+                showError('register', error.message);
+                setLoading('register-btn', false);
+                document.getElementById('register-btn').textContent = 'Create Account';
+            }
+        }
+
+        // Forgot password handler
+        async function handleForgotPassword() {
+            clearErrors();
+            const email = document.getElementById('forgot-email').value.trim();
+
+            if (!email) {
+                showError('forgot', 'Please enter your email');
+                return;
+            }
+
+            setLoading('forgot-btn', true);
+
+            try {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/reset-password.html'
+                });
+
+                if (error) throw error;
+
+                showSuccess('forgot', 'Password reset link sent! Check your email.');
+                setLoading('forgot-btn', false);
+                document.getElementById('forgot-btn').textContent = 'Send Reset Link';
+                
+            } catch (error) {
+                showError('forgot', error.message);
+                setLoading('forgot-btn', false);
+                document.getElementById('forgot-btn').textContent = 'Send Reset Link';
+            }
+        }
+
+        // Enter key handlers
+        document.getElementById('login-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+        document.getElementById('register-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleRegister();
+        });
+        document.getElementById('forgot-email').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleForgotPassword();
+        });
+    </script>
 </body>
 </html>
