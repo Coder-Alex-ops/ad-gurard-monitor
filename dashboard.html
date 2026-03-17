@@ -443,11 +443,8 @@
             currentUser = session.user;
             console.log('Logged in as:', currentUser.email);
 
-            // 2. Load budgets from localStorage (will migrate to Supabase later)
-            const savedBudgets = localStorage.getItem('campaign_budgets');
-            if (savedBudgets) {
-                budgets = JSON.parse(savedBudgets);
-            }
+            // 2. Load budgets from Supabase
+            await loadBudgetsFromSupabase();
 
             // Load notification email
             notificationEmail = localStorage.getItem('notification_email');
@@ -1235,7 +1232,71 @@
             currentEditingCampaign = null;
         }
 
-        function saveBudget() {
+        // ===== SUPABASE BUDGET FUNCTIONS =====
+        
+        async function loadBudgetsFromSupabase() {
+            if (!currentUser) return;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('campaign_budgets')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+                
+                if (error) throw error;
+                
+                // Convert array to object keyed by campaign_id
+                budgets = {};
+                data.forEach(row => {
+                    budgets[row.campaign_id] = {
+                        mediaPlanBudget: row.media_plan_budget,
+                        period: row.budget_period,
+                        updatedAt: row.updated_at
+                    };
+                });
+                
+                console.log('Loaded budgets from Supabase:', Object.keys(budgets).length);
+            } catch (error) {
+                console.error('Error loading budgets from Supabase:', error);
+                // Fallback to localStorage
+                const savedBudgets = localStorage.getItem('campaign_budgets');
+                if (savedBudgets) {
+                    budgets = JSON.parse(savedBudgets);
+                }
+            }
+        }
+        
+        async function saveBudgetToSupabase(campaignId, campaignName, adAccountId) {
+            if (!currentUser) return;
+            
+            const budgetInfo = budgets[campaignId];
+            if (!budgetInfo) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('campaign_budgets')
+                    .upsert({
+                        user_id: currentUser.id,
+                        campaign_id: campaignId,
+                        campaign_name: campaignName || 'Unknown',
+                        ad_account_id: adAccountId || currentAccountId,
+                        media_plan_budget: budgetInfo.mediaPlanBudget,
+                        budget_period: budgetInfo.period,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id,campaign_id'
+                    });
+                
+                if (error) throw error;
+                console.log('Budget saved to Supabase:', campaignId);
+            } catch (error) {
+                console.error('Error saving budget to Supabase:', error);
+            }
+        }
+        
+        // ===== END SUPABASE BUDGET FUNCTIONS =====
+
+        async function saveBudget() {
             const value = parseFloat(document.getElementById('budget-input').value);
             const period = document.getElementById('budget-period').value;
             
@@ -1244,16 +1305,25 @@
                 return;
             }
 
+            // Find campaign name from cache
+            const campaign = campaignsCache?.find(c => c.id === currentEditingCampaign);
+            const campaignName = campaign?.name || 'Unknown';
+
             budgets[currentEditingCampaign] = {
                 mediaPlanBudget: value,
                 period: period,
                 updatedAt: new Date().toISOString()
             };
 
+            // Save to Supabase (primary storage)
+            await saveBudgetToSupabase(currentEditingCampaign, campaignName, currentAccountId);
+            
+            // Also save to localStorage as backup
             localStorage.setItem('campaign_budgets', JSON.stringify(budgets));
+            
             closeBudgetModal();
             
-            // Sync budgets to Redis for cron job
+            // Sync budgets to Redis for cron job (will migrate later)
             syncBudgetsToServer();
             
             if (currentAccountId && campaignsCache) {
