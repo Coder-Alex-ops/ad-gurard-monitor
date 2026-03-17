@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - AdGuard Budget Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>* { font-family: 'DM Sans', sans-serif; }</style>
 </head>
@@ -262,12 +263,18 @@
     </div>
 
     <script>
-        // Configuration
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_uJj_aUiagop3jgsM_yAzYg_bo0n2Npt';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Meta Configuration
         const META_APP_ID = '1237093665238006';
         const REDIRECT_URI = 'https://ad-gurard-monitor.vercel.app/api/auth/callback';
         const CURRENCY_SYMBOL = '€';
         
         // State
+        let currentUser = null; // Supabase user
         let accessToken = null;
         let currentAccountId = null;
         let currentAccountName = null;
@@ -423,8 +430,21 @@
 
         // Initialize
         window.onload = async function() {
-            const savedBudgets = localStorage.getItem('campaign_budgets');
+            // 1. FIRST: Check Supabase session
+            const { data: { session } } = await supabaseClient.auth.getSession();
             
+            if (!session) {
+                // Not logged in to Supabase - redirect to login page
+                window.location.href = '/';
+                return;
+            }
+            
+            // Store current user
+            currentUser = session.user;
+            console.log('Logged in as:', currentUser.email);
+
+            // 2. Load budgets from localStorage (will migrate to Supabase later)
+            const savedBudgets = localStorage.getItem('campaign_budgets');
             if (savedBudgets) {
                 budgets = JSON.parse(savedBudgets);
             }
@@ -454,7 +474,7 @@
                 window.history.replaceState({}, document.title, '/dashboard.html');
             }
 
-            // Check session from backend
+            // 3. Check Meta session from backend
             try {
                 const response = await fetch('/api/auth/me');
                 const data = await response.json();
@@ -465,7 +485,7 @@
                     loadAdAccounts();
                 }
             } catch (error) {
-                console.log('No active session');
+                console.log('No active Meta session');
             }
 
             // Fallback: check localStorage (for test token)
@@ -510,11 +530,17 @@
             document.getElementById('dashboard-section').classList.remove('hidden');
         }
 
-        function logout() {
+        async function logout() {
+            // Sign out from Supabase
+            await supabaseClient.auth.signOut();
+            
+            // Clear Meta session
             localStorage.removeItem('meta_access_token');
             accessToken = null;
-            // Redirect to logout API (clears session cookie)
-            window.location.href = '/api/auth/logout';
+            currentUser = null;
+            
+            // Redirect to login page
+            window.location.href = '/';
         }
 
         function setTestToken() {
