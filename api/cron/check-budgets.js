@@ -1,73 +1,141 @@
-import { createClient } from 'redis';
+import { createClient } from '@supabase/supabase-js';
+import { createClient as createRedisClient } from 'redis';
 import { Resend } from 'resend';
 
 export const config = {
-    // Run at 9:00 AM and 6:00 PM UTC every day
-    cron: '0 9,18 * * *'
+    // Run at 18:00 UTC (20:00 Bulgarian time) every day
+    cron: '0 18 * * *'
 };
 
+// Initialize Supabase
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+);
+
 export default async function handler(req, res) {
-    // Verify this is a cron request (Vercel sends this header)
+    // Verify this is a cron request
     const authHeader = req.headers.authorization;
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        // Also allow manual trigger for testing
         if (req.query.secret !== process.env.CRON_SECRET && process.env.CRON_SECRET) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
     }
 
-    const redis = createClient({ url: process.env.ad_monitor_kv_REDIS_URL });
     const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    // Redis for deduplication
+    let redis = null;
+    try {
+        redis = createRedisClient({ url: process.env.ad_monitor_kv_REDIS_URL });
+        await redis.connect();
+    } catch (e) {
+        console.log('Redis not available, continuing without deduplication');
+    }
     
     const results = {
         checked: 0,
         alerts: 0,
+        skipped: 0,
         errors: []
     };
 
     try {
-        await redis.connect();
+        // Get all users with notifications enabled from Supabase
+        const { data: notificationUsers, error: notifError } = await supabase
+            .from('notification_settings')
+            .select('*')
+            .eq('enabled', true);
         
-        // Get all users with notifications enabled
-        const userIds = await redis.sMembers('notification_users');
-        console.log(`Found ${userIds.length} users with notifications enabled`);
+        if (notifError) throw notifError;
         
-        for (const userId of userIds) {
+        console.log(`Found ${notificationUsers?.length || 0} users with notifications enabled`);
+        
+        for (const userSettings of (notificationUsers || [])) {
             try {
-                // Get user's notification settings
-                const settingsData = await redis.get(`notifications:${userId}`);
-                if (!settingsData) {
-                    console.log(`No settings found for user ${userId}`);
+                const userId = userSettings.user_id;
+                const email = userSettings.email;
+                
+                if (!email) {
+                    console.log(`No email for user ${userId}`);
                     continue;
                 }
                 
-                const settings = JSON.parse(settingsData);
+                // Get user's Meta connection (access token)
+                const { data: metaConnection, error: metaError } = await supabase
+                    .from('meta_connections')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .single();
                 
-                // Check if token is expired
-                if (settings.tokenExpiresAt && settings.tokenExpiresAt < Date.now()) {
-                    console.log(`Token expired for user ${userId}`);
+                // If no Meta connection in Supabase, try Redis (backwards compatibility)
+                let accessToken = metaConnection?.access_token;
+                let adAccounts = metaConnection?.ad_accounts || [];
+                
+                if (!accessToken && redis) {
+                    const redisData = await redis.get(`notifications:${userId}`);
+                    if (redisData) {
+                        const parsed = JSON.parse(redisData);
+                        accessToken = parsed.accessToken;
+                        adAccounts = parsed.accounts || [];
+                    }
+                }
+                
+                if (!accessToken) {
+                    console.log(`No access token for user ${userId}`);
                     continue;
                 }
                 
-                if (!settings.email || !settings.accessToken) {
-                    console.log(`Missing email or token for user ${userId}`);
+                // Get user's budgets from Supabase - ONLY these campaigns will be checked
+                const { data: budgetsData, error: budgetsError } = await supabase
+                    .from('campaign_budgets')
+                    .select('*')
+                    .eq('user_id', userId);
+                
+                if (budgetsError) throw budgetsError;
+                
+                // Convert to object format
+                const budgets = {};
+                (budgetsData || []).forEach(row => {
+                    budgets[row.campaign_id] = {
+                        mediaPlanBudget: row.media_plan_budget,
+                        period: row.budget_period
+                    };
+                });
+                
+                // If no budgets set, skip this user entirely
+                if (Object.keys(budgets).length === 0) {
+                    console.log(`No budgets set for user ${userId}, skipping`);
+                    results.skipped++;
                     continue;
+                }
+                
+                // Get ad accounts if not stored
+                if (adAccounts.length === 0) {
+                    const accountsUrl = `https://graph.facebook.com/v19.0/me/adaccounts?fields=account_id&access_token=${accessToken}`;
+                    const accountsRes = await fetch(accountsUrl);
+                    const accountsData = await accountsRes.json();
+                    
+                    if (accountsData.data) {
+                        adAccounts = accountsData.data.map(a => a.account_id);
+                    }
                 }
                 
                 // Check campaigns for each account
-                for (const accountId of (settings.accounts || [])) {
+                for (const accountId of adAccounts) {
                     results.checked++;
                     
                     try {
                         const alerts = await checkAccountCampaigns(
                             accountId, 
-                            settings.accessToken, 
-                            settings.budgets || {}
+                            accessToken, 
+                            budgets,
+                            userSettings
                         );
                         
                         // Send alerts
                         for (const alert of alerts) {
-                            const sent = await sendAlertEmail(resend, settings.email, alert, redis, userId);
+                            const sent = await sendAlertEmail(resend, email, alert, redis, userId);
                             if (sent) {
                                 results.alerts++;
                             }
@@ -79,27 +147,27 @@ export default async function handler(req, res) {
                 }
                 
             } catch (userError) {
-                console.error(`Error processing user ${userId}:`, userError.message);
-                results.errors.push(`User ${userId}: ${userError.message}`);
+                console.error(`Error processing user:`, userError.message);
+                results.errors.push(`User error: ${userError.message}`);
             }
         }
         
-        await redis.disconnect();
+        if (redis) await redis.disconnect();
         
         return res.status(200).json({ 
             success: true, 
-            message: `Checked ${results.checked} accounts, sent ${results.alerts} alerts`,
+            message: `Checked ${results.checked} accounts, sent ${results.alerts} alerts, skipped ${results.skipped} users without budgets`,
             results 
         });
         
     } catch (error) {
         console.error('Cron job error:', error);
-        await redis.disconnect().catch(() => {});
+        if (redis) await redis.disconnect().catch(() => {});
         return res.status(500).json({ error: error.message, results });
     }
 }
 
-async function checkAccountCampaigns(accountId, accessToken, budgets) {
+async function checkAccountCampaigns(accountId, accessToken, budgets, userSettings) {
     const alerts = [];
     
     // Get date range for this month
@@ -131,11 +199,18 @@ async function checkAccountCampaigns(accountId, accessToken, budgets) {
         // Only check active campaigns
         if (campaign.status !== 'ACTIVE') continue;
         
-        const budgetInfo = budgets[campaign.id] || {};
+        // CRITICAL: Only check campaigns with Media Plan Budget set by user
+        // Skip campaigns without a budget entry in our database
+        const budgetInfo = budgets[campaign.id];
+        if (!budgetInfo || !budgetInfo.mediaPlanBudget) {
+            continue; // No Media Plan Budget set - skip this campaign
+        }
+        
         const pacing = calculatePacing(campaign, budgetInfo, periodStart, periodEnd, now);
         
         if (pacing && pacing.budget > 0) {
-            if (pacing.pacingPercent > 105) {
+            // Check for overspending
+            if (pacing.pacingPercent > 105 && userSettings.alert_overspending !== false) {
                 alerts.push({
                     type: 'overspending',
                     campaignId: campaign.id,
@@ -145,7 +220,9 @@ async function checkAccountCampaigns(accountId, accessToken, budgets) {
                     expectedSpend: pacing.expectedToDate,
                     pacingPercent: pacing.pacingPercent
                 });
-            } else if (pacing.pacingPercent < 80) {
+            } 
+            // Check for underspending (only if spend > €0.01)
+            else if (pacing.pacingPercent < 80 && pacing.periodSpend > 0.01 && userSettings.alert_underspending !== false) {
                 alerts.push({
                     type: 'severely-underspending',
                     campaignId: campaign.id,
@@ -163,15 +240,13 @@ async function checkAccountCampaigns(accountId, accessToken, budgets) {
 }
 
 function calculatePacing(campaign, budgetInfo, periodStart, periodEnd, now) {
-    // Get spend from insights
     const spend = campaign.insights?.data?.[0]?.spend || 0;
     const periodSpend = parseFloat(spend);
     
-    // Determine daily budget
     let dailyBudget = 0;
     
+    // ONLY use Media Plan Budget - NO FALLBACK to Meta's daily_budget
     if (budgetInfo.mediaPlanBudget && budgetInfo.period) {
-        // Use media plan budget
         const mpBudget = budgetInfo.mediaPlanBudget;
         switch (budgetInfo.period) {
             case 'daily':
@@ -191,25 +266,19 @@ function calculatePacing(campaign, budgetInfo, periodStart, periodEnd, now) {
                 dailyBudget = mpBudget / totalDays;
                 break;
         }
-    } else if (campaign.daily_budget) {
-        dailyBudget = parseFloat(campaign.daily_budget) / 100; // Meta returns cents
     }
     
+    // If no valid daily budget calculated, return null (skip this campaign)
     if (dailyBudget <= 0) {
         return null;
     }
     
-    // Calculate days active in period
     const campaignStart = campaign.start_time ? new Date(campaign.start_time) : periodStart;
     const effectiveStart = campaignStart > periodStart ? campaignStart : periodStart;
     const effectiveEnd = now < periodEnd ? now : periodEnd;
     
     const daysActive = Math.max(1, Math.ceil((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1);
-    
-    // Calculate expected spend
     const expectedToDate = dailyBudget * daysActive;
-    
-    // Calculate pacing percentage
     const pacingPercent = expectedToDate > 0 ? (periodSpend / expectedToDate) * 100 : 0;
     
     return {
@@ -221,13 +290,15 @@ function calculatePacing(campaign, budgetInfo, periodStart, periodEnd, now) {
 }
 
 async function sendAlertEmail(resend, email, alert, redis, userId) {
-    // Check if we already sent this alert today
-    const alertKey = `alert_sent:${userId}:${alert.campaignId}:${alert.type}:${new Date().toDateString()}`;
-    const alreadySent = await redis.get(alertKey);
-    
-    if (alreadySent) {
-        console.log(`Alert already sent today: ${alertKey}`);
-        return false;
+    // Check deduplication if Redis is available
+    if (redis) {
+        const alertKey = `alert_sent:${userId}:${alert.campaignId}:${alert.type}:${new Date().toDateString()}`;
+        const alreadySent = await redis.get(alertKey);
+        
+        if (alreadySent) {
+            console.log(`Alert already sent today: ${alertKey}`);
+            return false;
+        }
     }
     
     const subject = alert.type === 'overspending' 
@@ -271,8 +342,12 @@ async function sendAlertEmail(resend, email, alert, redis, userId) {
             return false;
         }
         
-        // Mark alert as sent (expires after 24 hours)
-        await redis.set(alertKey, '1', { EX: 86400 });
+        // Mark alert as sent if Redis is available
+        if (redis) {
+            const alertKey = `alert_sent:${userId}:${alert.campaignId}:${alert.type}:${new Date().toDateString()}`;
+            await redis.set(alertKey, '1', { EX: 86400 });
+        }
+        
         console.log(`Alert sent: ${alert.campaignName} - ${alert.type}`);
         return true;
         
