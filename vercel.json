@@ -1,13 +1,17 @@
 {
+  "version": 2,
   "rewrites": [
     { "source": "/", "destination": "/home.html" },
     { "source": "/login", "destination": "/index.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" }
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/blog", "destination": "/blog.html" },
+    { "source": "/blog/:slug", "destination": "/blog-post.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "crons": [
     {
       "path": "/api/cron/check-budgets",
-      "schedule": "0 18 * * *"
+      "schedule": "0 9,18 * * *"
     }
   ]
 }
