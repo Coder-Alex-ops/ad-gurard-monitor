@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { createClient as createRedisClient } from 'redis';
 import { Resend } from 'resend';
 
 export const config = {
-    // Run at 18:00 UTC (20:00 Bulgarian time) every day
-    cron: '0 18 * * *'
+    // Run at 09:00 and 18:00 UTC (11:00 and 20:00 Bulgarian time) every day
+    cron: '0 9,18 * * *'
 };
 
 // Initialize Supabase
@@ -24,314 +23,227 @@ export default async function handler(req, res) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     
-    // Redis for deduplication
-    let redis = null;
-    try {
-        redis = createRedisClient({ url: process.env.ad_monitor_kv_REDIS_URL });
-        await redis.connect();
-    } catch (e) {
-        console.log('Redis not available, continuing without deduplication');
-    }
-    
     const results = {
-        checked: 0,
-        alerts: 0,
-        skipped: 0,
+        accountBudgetsChecked: 0,
+        alertsSent: 0,
         errors: []
     };
 
     try {
-        // Get all users with notifications enabled from Supabase
-        const { data: notificationUsers, error: notifError } = await supabase
-            .from('notification_settings')
+        // ========================================
+        // Check Account-Level Budgets
+        // ========================================
+        
+        // Get all account budgets with their notification settings
+        const { data: accountBudgets, error: abError } = await supabase
+            .from('account_budgets')
             .select('*')
-            .eq('enabled', true);
+            .eq('alerts_enabled', true);
         
-        if (notifError) throw notifError;
+        if (abError) {
+            console.error('Error fetching account budgets:', abError);
+            results.errors.push('Failed to fetch account budgets');
+            return res.status(500).json({ error: 'Failed to fetch account budgets', results });
+        }
         
-        console.log(`Found ${notificationUsers?.length || 0} users with notifications enabled`);
+        console.log(`Found ${accountBudgets?.length || 0} account budgets to check`);
         
-        for (const userSettings of (notificationUsers || [])) {
+        for (const budget of (accountBudgets || [])) {
             try {
-                const userId = userSettings.user_id;
-                const email = userSettings.email;
+                results.accountBudgetsChecked++;
                 
-                if (!email) {
-                    console.log(`No email for user ${userId}`);
+                // Get notification settings for this user
+                const { data: notifSettings } = await supabase
+                    .from('notification_settings')
+                    .select('*')
+                    .eq('user_id', budget.user_id)
+                    .eq('enabled', true)
+                    .single();
+                
+                if (!notifSettings?.email) {
+                    console.log(`No notification email for user ${budget.user_id}`);
                     continue;
                 }
                 
-                // Get user's Meta connection (access token)
-                const { data: metaConnection, error: metaError } = await supabase
-                    .from('meta_connections')
-                    .select('*')
-                    .eq('user_id', userId)
+                // Get user's Meta access token from organization
+                const { data: org } = await supabase
+                    .from('organizations')
+                    .select('meta_access_token')
+                    .eq('owner_id', budget.user_id)
                     .single();
                 
-                // If no Meta connection in Supabase, try Redis (backwards compatibility)
-                let accessToken = metaConnection?.access_token;
-                let adAccounts = metaConnection?.ad_accounts || [];
+                let accessToken = org?.meta_access_token;
                 
-                if (!accessToken && redis) {
-                    const redisData = await redis.get(`notifications:${userId}`);
-                    if (redisData) {
-                        const parsed = JSON.parse(redisData);
-                        accessToken = parsed.accessToken;
-                        adAccounts = parsed.accounts || [];
-                    }
+                // Also try meta_connections table
+                if (!accessToken) {
+                    const { data: metaConn } = await supabase
+                        .from('meta_connections')
+                        .select('access_token')
+                        .eq('user_id', budget.user_id)
+                        .single();
+                    accessToken = metaConn?.access_token;
                 }
                 
                 if (!accessToken) {
-                    console.log(`No access token for user ${userId}`);
+                    console.log(`No access token for user ${budget.user_id}`);
                     continue;
                 }
                 
-                // Get user's budgets from Supabase - ONLY these campaigns will be checked
-                const { data: budgetsData, error: budgetsError } = await supabase
-                    .from('campaign_budgets')
-                    .select('*')
-                    .eq('user_id', userId);
+                // Check if within budget period
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const periodStart = new Date(budget.period_start);
+                const periodEnd = new Date(budget.period_end);
                 
-                if (budgetsError) throw budgetsError;
+                if (today < periodStart || today > periodEnd) {
+                    console.log(`Budget period not active for ${budget.ad_account_name}`);
+                    continue;
+                }
                 
-                // Convert to object format
-                const budgets = {};
-                (budgetsData || []).forEach(row => {
-                    budgets[row.campaign_id] = {
-                        mediaPlanBudget: row.media_plan_budget,
-                        period: row.budget_period
-                    };
+                // Fetch actual spend from Meta API
+                const todayStr = today.toISOString().split('T')[0];
+                const timeRange = JSON.stringify({
+                    since: budget.period_start,
+                    until: todayStr
                 });
                 
-                // If no budgets set, skip this user entirely
-                if (Object.keys(budgets).length === 0) {
-                    console.log(`No budgets set for user ${userId}, skipping`);
-                    results.skipped++;
+                const insightsUrl = `https://graph.facebook.com/v19.0/${budget.ad_account_id}/insights?fields=spend&time_range=${timeRange}&access_token=${accessToken}`;
+                const insightsRes = await fetch(insightsUrl);
+                const insightsData = await insightsRes.json();
+                
+                if (insightsData.error) {
+                    console.error(`Meta API error for ${budget.ad_account_id}:`, insightsData.error.message);
+                    results.errors.push(`Meta API error for ${budget.ad_account_name}: ${insightsData.error.message}`);
                     continue;
                 }
                 
-                // Get ad accounts if not stored
-                if (adAccounts.length === 0) {
-                    const accountsUrl = `https://graph.facebook.com/v19.0/me/adaccounts?fields=account_id&access_token=${accessToken}`;
-                    const accountsRes = await fetch(accountsUrl);
-                    const accountsData = await accountsRes.json();
-                    
-                    if (accountsData.data) {
-                        adAccounts = accountsData.data.map(a => a.account_id);
-                    }
+                const actualSpend = parseFloat(insightsData.data?.[0]?.spend || 0);
+                
+                // Calculate pacing
+                const totalDays = Math.ceil((periodEnd - periodStart) / (1000 * 60 * 60 * 24)) + 1;
+                const elapsedDays = Math.ceil((today - periodStart) / (1000 * 60 * 60 * 24)) + 1;
+                const dailyBudget = parseFloat(budget.monthly_budget) / totalDays;
+                const expectedSpend = dailyBudget * elapsedDays;
+                const pacingPercent = expectedSpend > 0 ? (actualSpend / expectedSpend) * 100 : 0;
+                
+                console.log(`${budget.ad_account_name}: Spend €${actualSpend.toFixed(2)}, Expected €${expectedSpend.toFixed(2)}, Pacing ${pacingPercent.toFixed(1)}%`);
+                
+                // Check thresholds
+                const underspendThreshold = budget.alert_underspend_threshold || 50;
+                const overspendThreshold = budget.alert_overspend_threshold || 120;
+                
+                let alertType = null;
+                
+                if (pacingPercent > overspendThreshold && notifSettings.alert_overspending !== false) {
+                    alertType = 'overspending';
+                } else if (pacingPercent < underspendThreshold && actualSpend > 0.01 && notifSettings.alert_underspending !== false) {
+                    alertType = 'severely-underspending';
                 }
                 
-                // Check campaigns for each account
-                for (const accountId of adAccounts) {
-                    results.checked++;
+                if (alertType) {
+                    console.log(`🚨 Alert needed: ${budget.ad_account_name} - ${alertType} (${pacingPercent.toFixed(1)}%)`);
                     
-                    try {
-                        const alerts = await checkAccountCampaigns(
-                            accountId, 
-                            accessToken, 
-                            budgets,
-                            userSettings
-                        );
-                        
-                        // Send alerts
-                        for (const alert of alerts) {
-                            const sent = await sendAlertEmail(resend, email, alert, redis, userId);
-                            if (sent) {
-                                results.alerts++;
-                            }
-                        }
-                    } catch (accountError) {
-                        console.error(`Error checking account ${accountId}:`, accountError.message);
-                        results.errors.push(`Account ${accountId}: ${accountError.message}`);
+                    const sent = await sendAccountBudgetAlert(resend, {
+                        email: notifSettings.email,
+                        alertType,
+                        accountName: budget.ad_account_name,
+                        actualSpend,
+                        expectedSpend,
+                        pacingPercent,
+                        monthlyBudget: budget.monthly_budget,
+                        periodStart: budget.period_start,
+                        periodEnd: budget.period_end,
+                        elapsedDays,
+                        totalDays
+                    });
+                    
+                    if (sent) {
+                        results.alertsSent++;
                     }
+                } else {
+                    console.log(`✅ ${budget.ad_account_name} is on track (${pacingPercent.toFixed(1)}%)`);
                 }
                 
-            } catch (userError) {
-                console.error(`Error processing user:`, userError.message);
-                results.errors.push(`User error: ${userError.message}`);
+            } catch (error) {
+                console.error(`Error checking account budget ${budget.ad_account_id}:`, error.message);
+                results.errors.push(`Account ${budget.ad_account_id}: ${error.message}`);
             }
         }
         
-        if (redis) await redis.disconnect();
-        
         return res.status(200).json({ 
             success: true, 
-            message: `Checked ${results.checked} accounts, sent ${results.alerts} alerts, skipped ${results.skipped} users without budgets`,
+            message: `Checked ${results.accountBudgetsChecked} account budgets, sent ${results.alertsSent} alerts`,
             results 
         });
         
     } catch (error) {
         console.error('Cron job error:', error);
-        if (redis) await redis.disconnect().catch(() => {});
         return res.status(500).json({ error: error.message, results });
     }
 }
 
-async function checkAccountCampaigns(accountId, accessToken, budgets, userSettings) {
-    const alerts = [];
+async function sendAccountBudgetAlert(resend, data) {
+    const { email, alertType, accountName, actualSpend, expectedSpend, pacingPercent, monthlyBudget, periodStart, periodEnd, elapsedDays, totalDays } = data;
     
-    // Get date range for this month
-    const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-    const timeRange = JSON.stringify({
-        since: periodStart.toISOString().split('T')[0],
-        until: now.toISOString().split('T')[0]
-    });
-    
-    // Fetch campaigns with insights
-    const url = `https://graph.facebook.com/v19.0/act_${accountId}/campaigns?` + 
-        `fields=id,name,status,daily_budget,lifetime_budget,start_time,stop_time,` +
-        `insights.time_range(${timeRange}){spend,impressions}` +
-        `&access_token=${accessToken}`;
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.error) {
-        throw new Error(data.error.message);
-    }
-    
-    const campaigns = data.data || [];
-    
-    for (const campaign of campaigns) {
-        // Only check active campaigns
-        if (campaign.status !== 'ACTIVE') continue;
-        
-        // CRITICAL: Only check campaigns with Media Plan Budget set by user
-        // Skip campaigns without a budget entry in our database
-        const budgetInfo = budgets[campaign.id];
-        if (!budgetInfo || !budgetInfo.mediaPlanBudget) {
-            continue; // No Media Plan Budget set - skip this campaign
-        }
-        
-        const pacing = calculatePacing(campaign, budgetInfo, periodStart, periodEnd, now);
-        
-        if (pacing && pacing.budget > 0) {
-            // Check for overspending
-            if (pacing.pacingPercent > 105 && userSettings.alert_overspending !== false) {
-                alerts.push({
-                    type: 'overspending',
-                    campaignId: campaign.id,
-                    campaignName: campaign.name,
-                    accountId: accountId,
-                    currentSpend: pacing.periodSpend,
-                    expectedSpend: pacing.expectedToDate,
-                    pacingPercent: pacing.pacingPercent
-                });
-            } 
-            // Check for underspending (only if spend > €0.01)
-            else if (pacing.pacingPercent < 80 && pacing.periodSpend > 0.01 && userSettings.alert_underspending !== false) {
-                alerts.push({
-                    type: 'severely-underspending',
-                    campaignId: campaign.id,
-                    campaignName: campaign.name,
-                    accountId: accountId,
-                    currentSpend: pacing.periodSpend,
-                    expectedSpend: pacing.expectedToDate,
-                    pacingPercent: pacing.pacingPercent
-                });
-            }
-        }
-    }
-    
-    return alerts;
-}
-
-function calculatePacing(campaign, budgetInfo, periodStart, periodEnd, now) {
-    const spend = campaign.insights?.data?.[0]?.spend || 0;
-    const periodSpend = parseFloat(spend);
-    
-    let dailyBudget = 0;
-    
-    // ONLY use Media Plan Budget - NO FALLBACK to Meta's daily_budget
-    if (budgetInfo.mediaPlanBudget && budgetInfo.period) {
-        const mpBudget = budgetInfo.mediaPlanBudget;
-        switch (budgetInfo.period) {
-            case 'daily':
-                dailyBudget = mpBudget;
-                break;
-            case 'weekly':
-                dailyBudget = mpBudget / 7;
-                break;
-            case 'monthly':
-                const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                dailyBudget = mpBudget / daysInMonth;
-                break;
-            case 'total':
-                const campaignStart = campaign.start_time ? new Date(campaign.start_time) : periodStart;
-                const campaignEnd = campaign.stop_time ? new Date(campaign.stop_time) : periodEnd;
-                const totalDays = Math.ceil((campaignEnd - campaignStart) / (1000 * 60 * 60 * 24)) + 1;
-                dailyBudget = mpBudget / totalDays;
-                break;
-        }
-    }
-    
-    // If no valid daily budget calculated, return null (skip this campaign)
-    if (dailyBudget <= 0) {
-        return null;
-    }
-    
-    const campaignStart = campaign.start_time ? new Date(campaign.start_time) : periodStart;
-    const effectiveStart = campaignStart > periodStart ? campaignStart : periodStart;
-    const effectiveEnd = now < periodEnd ? now : periodEnd;
-    
-    const daysActive = Math.max(1, Math.ceil((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24)) + 1);
-    const expectedToDate = dailyBudget * daysActive;
-    const pacingPercent = expectedToDate > 0 ? (periodSpend / expectedToDate) * 100 : 0;
-    
-    return {
-        budget: dailyBudget,
-        periodSpend,
-        expectedToDate,
-        pacingPercent
-    };
-}
-
-async function sendAlertEmail(resend, email, alert, redis, userId) {
-    // Check deduplication if Redis is available
-    if (redis) {
-        const alertKey = `alert_sent:${userId}:${alert.campaignId}:${alert.type}:${new Date().toDateString()}`;
-        const alreadySent = await redis.get(alertKey);
-        
-        if (alreadySent) {
-            console.log(`Alert already sent today: ${alertKey}`);
-            return false;
-        }
-    }
-    
-    const subject = alert.type === 'overspending' 
-        ? `⚠️ Overspending Alert: ${alert.campaignName}`
-        : `📉 Underspending Alert: ${alert.campaignName}`;
-    
-    const color = alert.type === 'overspending' ? '#ef4444' : '#f59e0b';
-    const emoji = alert.type === 'overspending' ? '⚠️' : '📉';
-    const title = alert.type === 'overspending' ? 'Overspending Alert' : 'Severely Underspending';
+    const isOverspending = alertType === 'overspending';
+    const color = isOverspending ? '#ef4444' : '#f59e0b';
+    const emoji = isOverspending ? '⚠️' : '📉';
+    const title = isOverspending ? 'Overspending Alert' : 'Underspending Alert';
+    const subject = `${emoji} ${title}: ${accountName}`;
     
     const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: ${color}; padding: 20px; border-radius: 12px 12px 0 0;">
-                <h1 style="color: white; margin: 0;">${emoji} ${title}</h1>
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, ${color} 0%, ${isOverspending ? '#dc2626' : '#d97706'} 100%); padding: 30px; border-radius: 16px 16px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 24px;">${emoji} ${title}</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Account Budget Alert</p>
             </div>
-            <div style="background: #fff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 0 0 12px 12px;">
-                <p>Campaign <strong>${alert.campaignName}</strong> needs attention!</p>
-                <table style="width: 100%; margin: 20px 0;">
-                    <tr><td style="padding: 8px 0; color: #666;">Current Spend:</td><td style="text-align: right; font-weight: bold;">€${alert.currentSpend.toFixed(2)}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #666;">Expected:</td><td style="text-align: right; font-weight: bold;">€${alert.expectedSpend.toFixed(2)}</td></tr>
-                    <tr><td style="padding: 8px 0; color: #666;">Pacing:</td><td style="text-align: right; font-weight: bold; color: ${color};">${alert.pacingPercent.toFixed(1)}%</td></tr>
-                </table>
-                <a href="https://ad-gurard-monitor.vercel.app/dashboard.html" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none;">View Dashboard</a>
+            <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 16px 16px;">
+                <p style="color: #374151; font-size: 16px; margin-bottom: 20px;">
+                    Account <strong>"${accountName}"</strong> is ${isOverspending ? 'overspending' : 'underspending'}!
+                </p>
+                
+                <div style="background: ${isOverspending ? '#fef2f2' : '#fffbeb'}; border: 1px solid ${isOverspending ? '#fecaca' : '#fde68a'}; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 10px 0; color: #6b7280;">Monthly Budget:</td>
+                            <td style="padding: 10px 0; color: #111827; font-weight: 600; text-align: right;">€${parseFloat(monthlyBudget).toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #6b7280;">Period:</td>
+                            <td style="padding: 10px 0; color: #111827; font-weight: 600; text-align: right;">${periodStart} to ${periodEnd}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #6b7280;">Day:</td>
+                            <td style="padding: 10px 0; color: #111827; font-weight: 600; text-align: right;">${elapsedDays} of ${totalDays}</td>
+                        </tr>
+                        <tr style="border-top: 1px solid ${isOverspending ? '#fecaca' : '#fde68a'};">
+                            <td style="padding: 10px 0; color: #6b7280;">Current Spend:</td>
+                            <td style="padding: 10px 0; color: #111827; font-weight: 600; text-align: right;">€${actualSpend.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #6b7280;">Expected to Date:</td>
+                            <td style="padding: 10px 0; color: #111827; font-weight: 600; text-align: right;">€${expectedSpend.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #6b7280;">Pacing:</td>
+                            <td style="padding: 10px 0; color: ${color}; font-weight: 700; text-align: right; font-size: 18px;">${pacingPercent.toFixed(1)}%</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <a href="https://ad-gurard-monitor.vercel.app/dashboard" style="display: inline-block; background: #4f46e5; color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: 600;">
+                    View Dashboard →
+                </a>
             </div>
-            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
-                AdGuard Budget Monitor • Automated Alert
+            <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">
+                AdGuardian • Automated Budget Alert
             </p>
         </div>
     `;
     
     try {
         const { error } = await resend.emails.send({
-            from: 'AdGuard Monitor <onboarding@resend.dev>',
+            from: 'AdGuardian <onboarding@resend.dev>',
             to: [email],
             subject: subject,
             html: htmlContent,
@@ -342,13 +254,7 @@ async function sendAlertEmail(resend, email, alert, redis, userId) {
             return false;
         }
         
-        // Mark alert as sent if Redis is available
-        if (redis) {
-            const alertKey = `alert_sent:${userId}:${alert.campaignId}:${alert.type}:${new Date().toDateString()}`;
-            await redis.set(alertKey, '1', { EX: 86400 });
-        }
-        
-        console.log(`Alert sent: ${alert.campaignName} - ${alert.type}`);
+        console.log(`✅ Alert sent to ${email}: ${accountName} - ${alertType}`);
         return true;
         
     } catch (error) {
