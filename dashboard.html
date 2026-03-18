@@ -298,6 +298,54 @@
         </div>
     </div>
 
+    <!-- Account Budget Modal -->
+    <div id="account-budget-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-xl font-bold text-slate-900">📊 Account Budget Settings</h2>
+                <p class="text-sm text-slate-500 mt-1" id="account-budget-name"></p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Monthly Budget (€)</label>
+                    <input type="number" id="account-monthly-budget" placeholder="e.g., 300" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Period Start</label>
+                        <input type="date" id="account-period-start" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Period End</label>
+                        <input type="date" id="account-period-end" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 pt-4">
+                    <p class="text-sm font-semibold text-slate-700 mb-3">🚨 Alert Thresholds</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Underspending below (%)</label>
+                            <input type="number" id="account-underspend-threshold" value="50" min="0" max="100" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Overspending above (%)</label>
+                            <input type="number" id="account-overspend-threshold" value="120" min="100" max="200" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-4">
+                    <input type="checkbox" id="account-alerts-enabled" checked class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="account-alerts-enabled" class="text-sm text-slate-700">Enable email alerts for this account</label>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex gap-3">
+                <button onclick="closeAccountBudgetModal()" class="flex-1 px-4 py-3 border border-slate-200 bg-white rounded-xl font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button onclick="clearAccountBudget()" class="px-4 py-3 border border-red-200 bg-red-50 text-red-700 rounded-xl font-semibold hover:bg-red-100">Clear</button>
+                <button onclick="saveAccountBudget()" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Supabase Configuration
         const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
@@ -332,6 +380,8 @@
         let todayInsightsCache = {};
         let notificationEmail = null;
         let sentAlerts = {}; // Track sent alerts to avoid duplicates
+        let accountBudgets = {}; // Account-level budget settings
+        let currentEditingAccountBudget = null; // Currently editing account for budget modal
 
         // Period config
         const periodLabels = {
@@ -749,12 +799,58 @@
                 }
 
                 accountsCache = accountsToShow;
+                
+                // Load account budgets before rendering
+                await loadAccountBudgets();
+                
+                // Fetch period insights for accounts with budgets
+                await fetchAccountPeriodInsights(accountsToShow);
+                
                 renderAccounts(accountsToShow);
                 updateLastUpdated();
 
             } catch (error) {
                 showError(error.message);
             }
+        }
+        
+        // Store period spend for accounts
+        let accountPeriodSpend = {};
+        
+        // Fetch insights for budget period
+        async function fetchAccountPeriodInsights(accounts) {
+            accountPeriodSpend = {};
+            
+            // Get accounts that have budgets set
+            const accountsWithBudgets = accounts.filter(acc => {
+                const budget = accountBudgets[acc.id];
+                return budget && budget.monthly_budget && budget.period_start && budget.period_end;
+            });
+            
+            if (accountsWithBudgets.length === 0) return;
+            
+            // Fetch insights for each account
+            const promises = accountsWithBudgets.map(async (account) => {
+                const budget = accountBudgets[account.id];
+                try {
+                    const response = await fetch(
+                        `https://graph.facebook.com/v19.0/${account.id}/insights?fields=spend&time_range={"since":"${budget.period_start}","until":"${budget.period_end}"}&access_token=${accessToken}`
+                    );
+                    const data = await response.json();
+                    
+                    if (data.data && data.data[0]) {
+                        accountPeriodSpend[account.id] = parseFloat(data.data[0].spend || 0);
+                    } else {
+                        accountPeriodSpend[account.id] = 0;
+                    }
+                } catch (error) {
+                    console.error(`Error fetching insights for ${account.id}:`, error);
+                    accountPeriodSpend[account.id] = 0;
+                }
+            });
+            
+            await Promise.all(promises);
+            console.log('Fetched period insights:', accountPeriodSpend);
         }
 
         function renderAccounts(accounts) {
@@ -790,19 +886,87 @@
                 const spent = (parseInt(account.amount_spent || 0) / 100);
                 const balance = (parseInt(account.balance || 0) / 100);
                 const isActive = account.account_status === 1;
+                const budget = accountBudgets[account.id];
+                
+                // Calculate pacing if budget is set
+                let pacingHtml = '';
+                let alertBadge = '';
+                
+                if (budget && budget.monthly_budget && budget.period_start && budget.period_end) {
+                    const pacing = calculateAccountPacing(account.id, budget);
+                    if (pacing && pacing.status === 'active') {
+                        const pacingPercent = Math.round(pacing.pacingPercent);
+                        const pacingColor = getPacingColor(pacingPercent, budget.alert_underspend_threshold, budget.alert_overspend_threshold);
+                        const pacingStatus = getPacingStatus(pacingPercent, budget.alert_underspend_threshold, budget.alert_overspend_threshold);
+                        const isAlert = pacingPercent < budget.alert_underspend_threshold || pacingPercent > budget.alert_overspend_threshold;
+                        
+                        if (isAlert && budget.alerts_enabled) {
+                            alertBadge = `<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>`;
+                        }
+                        
+                        pacingHtml = `
+                            <div class="mt-4 p-4 bg-slate-50 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-700">📊 Budget Pacing (Day ${pacing.elapsedDays}/${pacing.totalDays})</span>
+                                    <span class="text-sm font-bold ${pacingColor}">${pacingPercent}% - ${pacingStatus}</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full ${pacingColor.replace('text-', 'bg-')} rounded-full transition-all" style="width: ${Math.min(pacingPercent, 150)}%"></div>
+                                </div>
+                                <div class="flex justify-between mt-2 text-xs text-slate-500">
+                                    <span>Spent: ${formatCurrency(pacing.actualSpend)}</span>
+                                    <span>Expected: ${formatCurrency(pacing.expectedSpend)}</span>
+                                    <span>Budget: ${formatCurrency(budget.monthly_budget)}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else if (pacing && pacing.status === 'not_started') {
+                        pacingHtml = `
+                            <div class="mt-4 p-4 bg-blue-50 rounded-xl">
+                                <div class="flex items-center gap-2 text-blue-700">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">Budget period starts ${budget.period_start}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else if (pacing && pacing.status === 'ended') {
+                        pacingHtml = `
+                            <div class="mt-4 p-4 bg-slate-100 rounded-xl">
+                                <div class="flex items-center gap-2 text-slate-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">Budget period ended ${budget.period_end}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
                 
                 return `
-                    <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer" onclick="viewCampaigns('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-200">
                         <div class="flex items-start justify-between mb-5">
-                            <div>
+                            <div class="cursor-pointer" onclick="viewCampaigns('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')">
                                 <h3 class="font-bold text-slate-900 text-lg">${account.name || account.account_id}</h3>
                                 <p class="text-sm text-slate-500 mt-1">ID: ${account.id}</p>
                             </div>
-                            <span class="px-3 py-1.5 rounded-full text-xs font-semibold ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
-                                ${isActive ? 'Active' : 'Inactive'}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1.5 rounded-full text-xs font-semibold ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                                    ${isActive ? 'Active' : 'Inactive'}
+                                </span>
+                                <button onclick="event.stopPropagation(); openAccountBudgetModal('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')" 
+                                    class="relative p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" 
+                                    title="Budget Settings">
+                                    ${alertBadge}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-4 mb-5">
+                        <div class="grid grid-cols-3 gap-4 mb-5 cursor-pointer" onclick="viewCampaigns('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')">
                             <div class="bg-slate-50 rounded-xl p-4">
                                 <p class="text-sm text-slate-500 mb-1">Total Spent (Lifetime)</p>
                                 <p class="text-2xl font-bold text-slate-900">${formatCurrency(spent)}</p>
@@ -816,7 +980,8 @@
                                 <p class="text-2xl font-bold text-slate-900">${account.currency}</p>
                             </div>
                         </div>
-                        <div class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl text-center hover:bg-indigo-700 transition-colors">
+                        ${pacingHtml}
+                        <div class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl text-center hover:bg-indigo-700 transition-colors cursor-pointer mt-4" onclick="viewCampaigns('${account.id}', '${(account.name || account.account_id).replace(/'/g, "\\'")}')">
                             View Campaigns
                         </div>
                     </div>
@@ -1825,6 +1990,245 @@
                 console.error('Failed to send alert email:', error);
             }
         }
+
+        // ===== ACCOUNT BUDGET FUNCTIONS =====
+        
+        // Load account budgets from Supabase
+        async function loadAccountBudgets() {
+            if (!currentUser) return;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('account_budgets')
+                    .select('*')
+                    .eq('user_id', currentUser.id);
+                
+                if (error) throw error;
+                
+                // Convert to object keyed by ad_account_id
+                accountBudgets = {};
+                (data || []).forEach(budget => {
+                    accountBudgets[budget.ad_account_id] = budget;
+                });
+                
+                console.log('Loaded account budgets:', Object.keys(accountBudgets).length);
+            } catch (error) {
+                console.error('Error loading account budgets:', error);
+            }
+        }
+        
+        // Calculate pacing for an account
+        function calculateAccountPacing(accountId, budget) {
+            if (!budget || !budget.monthly_budget || !budget.period_start || !budget.period_end) {
+                return null;
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const periodStart = new Date(budget.period_start);
+            const periodEnd = new Date(budget.period_end);
+            
+            // Check if we're within the budget period
+            if (today < periodStart) {
+                return { status: 'not_started', message: 'Budget period not started yet' };
+            }
+            
+            if (today > periodEnd) {
+                return { status: 'ended', message: 'Budget period ended' };
+            }
+            
+            // Calculate total days in period
+            const totalDays = Math.ceil((periodEnd - periodStart) / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Calculate elapsed days
+            const elapsedDays = Math.ceil((today - periodStart) / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Daily budget
+            const dailyBudget = budget.monthly_budget / totalDays;
+            
+            // Expected spend to date
+            const expectedSpend = dailyBudget * elapsedDays;
+            
+            // Get actual spend from period insights
+            const actualSpend = accountPeriodSpend[accountId] || 0;
+            
+            // Pacing percentage
+            const pacingPercent = expectedSpend > 0 ? (actualSpend / expectedSpend) * 100 : 0;
+            
+            return {
+                actualSpend,
+                expectedSpend,
+                totalBudget: budget.monthly_budget,
+                dailyBudget,
+                elapsedDays,
+                totalDays,
+                pacingPercent,
+                status: 'active'
+            };
+        }
+        
+        // Get pacing color based on thresholds
+        function getPacingColor(pacingPercent, underspendThreshold, overspendThreshold) {
+            if (pacingPercent < underspendThreshold) return 'text-red-600';
+            if (pacingPercent < 80) return 'text-amber-600';
+            if (pacingPercent <= 105) return 'text-emerald-600';
+            if (pacingPercent <= overspendThreshold) return 'text-amber-600';
+            return 'text-red-600';
+        }
+        
+        // Get pacing status text
+        function getPacingStatus(pacingPercent, underspendThreshold, overspendThreshold) {
+            if (pacingPercent < underspendThreshold) return 'Severely Under';
+            if (pacingPercent < 80) return 'Underspending';
+            if (pacingPercent <= 105) return 'On Track';
+            if (pacingPercent <= overspendThreshold) return 'Slightly Over';
+            return 'Overspending';
+        }
+        
+        // Open account budget modal
+        function openAccountBudgetModal(accountId, accountName) {
+            currentEditingAccountBudget = accountId;
+            document.getElementById('account-budget-name').textContent = accountName;
+            
+            const budget = accountBudgets[accountId];
+            
+            if (budget) {
+                document.getElementById('account-monthly-budget').value = budget.monthly_budget || '';
+                document.getElementById('account-period-start').value = budget.period_start || '';
+                document.getElementById('account-period-end').value = budget.period_end || '';
+                document.getElementById('account-underspend-threshold').value = budget.alert_underspend_threshold || 50;
+                document.getElementById('account-overspend-threshold').value = budget.alert_overspend_threshold || 120;
+                document.getElementById('account-alerts-enabled').checked = budget.alerts_enabled !== false;
+            } else {
+                // Set defaults
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                
+                document.getElementById('account-monthly-budget').value = '';
+                document.getElementById('account-period-start').value = firstDay.toISOString().split('T')[0];
+                document.getElementById('account-period-end').value = lastDay.toISOString().split('T')[0];
+                document.getElementById('account-underspend-threshold').value = 50;
+                document.getElementById('account-overspend-threshold').value = 120;
+                document.getElementById('account-alerts-enabled').checked = true;
+            }
+            
+            document.getElementById('account-budget-modal').classList.remove('hidden');
+        }
+        
+        // Close account budget modal
+        function closeAccountBudgetModal() {
+            document.getElementById('account-budget-modal').classList.add('hidden');
+            currentEditingAccountBudget = null;
+        }
+        
+        // Save account budget
+        async function saveAccountBudget() {
+            if (!currentEditingAccountBudget || !currentUser) return;
+            
+            const monthlyBudget = parseFloat(document.getElementById('account-monthly-budget').value);
+            const periodStart = document.getElementById('account-period-start').value;
+            const periodEnd = document.getElementById('account-period-end').value;
+            const underspendThreshold = parseInt(document.getElementById('account-underspend-threshold').value) || 50;
+            const overspendThreshold = parseInt(document.getElementById('account-overspend-threshold').value) || 120;
+            const alertsEnabled = document.getElementById('account-alerts-enabled').checked;
+            
+            if (!monthlyBudget || monthlyBudget <= 0) {
+                alert('Please enter a valid monthly budget');
+                return;
+            }
+            
+            if (!periodStart || !periodEnd) {
+                alert('Please select budget period dates');
+                return;
+            }
+            
+            if (new Date(periodStart) > new Date(periodEnd)) {
+                alert('Period start must be before period end');
+                return;
+            }
+            
+            const account = accountsCache?.find(a => a.id === currentEditingAccountBudget);
+            
+            const budgetData = {
+                user_id: currentUser.id,
+                organization_id: currentOrganization?.id,
+                ad_account_id: currentEditingAccountBudget,
+                ad_account_name: account?.name || currentEditingAccountBudget,
+                monthly_budget: monthlyBudget,
+                period_start: periodStart,
+                period_end: periodEnd,
+                alert_underspend_threshold: underspendThreshold,
+                alert_overspend_threshold: overspendThreshold,
+                alerts_enabled: alertsEnabled,
+                updated_at: new Date().toISOString()
+            };
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('account_budgets')
+                    .upsert(budgetData, { 
+                        onConflict: 'user_id,ad_account_id'
+                    })
+                    .select();
+                
+                if (error) throw error;
+                
+                // Update local state
+                accountBudgets[currentEditingAccountBudget] = data[0] || budgetData;
+                
+                closeAccountBudgetModal();
+                
+                // Re-render accounts to show pacing
+                if (accountsCache) {
+                    renderAccounts(accountsCache);
+                }
+                
+                console.log('Saved account budget:', currentEditingAccountBudget);
+                
+            } catch (error) {
+                console.error('Error saving account budget:', error);
+                alert('Failed to save budget settings. Please try again.');
+            }
+        }
+        
+        // Clear account budget
+        async function clearAccountBudget() {
+            if (!currentEditingAccountBudget || !currentUser) return;
+            
+            if (!confirm('Are you sure you want to clear the budget settings for this account?')) {
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('account_budgets')
+                    .delete()
+                    .eq('user_id', currentUser.id)
+                    .eq('ad_account_id', currentEditingAccountBudget);
+                
+                if (error) throw error;
+                
+                // Update local state
+                delete accountBudgets[currentEditingAccountBudget];
+                
+                closeAccountBudgetModal();
+                
+                // Re-render accounts
+                if (accountsCache) {
+                    renderAccounts(accountsCache);
+                }
+                
+                console.log('Cleared account budget:', currentEditingAccountBudget);
+                
+            } catch (error) {
+                console.error('Error clearing account budget:', error);
+                alert('Failed to clear budget settings. Please try again.');
+            }
+        }
+        
+        // ===== END ACCOUNT BUDGET FUNCTIONS =====
     </script>
 
     <!-- Test Token Button -->
