@@ -264,7 +264,7 @@ async function sendAccountBudgetAlert(resend, data) {
     
     try {
         const { error } = await resend.emails.send({
-            from: 'AdGuardian <alerts@adguardian.tech>>',
+            from: 'AdGuardian <alerts@adguardian.tech>',
             to: [email],
             subject: subject,
             html: htmlContent,
