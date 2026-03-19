@@ -1,4 +1,10 @@
 import { createClient } from 'redis';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+
+const supabase = createSupabaseClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+);
 
 export default async function handler(req, res) {
     const { code, error, error_description } = req.query;
@@ -82,6 +88,32 @@ export default async function handler(req, res) {
         });
 
         await redis.disconnect();
+        
+        // Also store token in Supabase for cron job access
+        // First, find the user by email in auth.users
+        if (userData.email) {
+            const { data: authUser } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', userData.email)
+                .single();
+            
+            if (authUser) {
+                // Update organization with Meta token
+                const tokenExpiresAt = new Date(Date.now() + (finalExpiry * 1000)).toISOString();
+                
+                await supabase
+                    .from('organizations')
+                    .update({
+                        meta_access_token: finalToken,
+                        meta_token_expires_at: tokenExpiresAt,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('owner_id', authUser.id);
+                
+                console.log(`Saved Meta token to Supabase for user ${userData.email}`);
+            }
+        }
 
         // Set session cookie and redirect
         res.setHeader('Set-Cookie', `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${finalExpiry || 5184000}`);
