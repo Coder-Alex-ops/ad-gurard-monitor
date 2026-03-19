@@ -90,10 +90,13 @@ export default async function handler(req, res) {
                 }
                 
                 // Check if within budget period
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                const now = new Date();
+                const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
+                const today = new Date(todayStr); // Midnight UTC
                 const periodStart = new Date(budget.period_start);
                 const periodEnd = new Date(budget.period_end);
+                
+                console.log(`Date check: today=${todayStr}, period=${budget.period_start} to ${budget.period_end}`);
                 
                 if (today < periodStart || today > periodEnd) {
                     console.log(`Budget period not active for ${budget.ad_account_name}`);
@@ -101,7 +104,6 @@ export default async function handler(req, res) {
                 }
                 
                 // Fetch actual spend from Meta API
-                const todayStr = today.toISOString().split('T')[0];
                 const timeRange = JSON.stringify({
                     since: budget.period_start,
                     until: todayStr
@@ -132,12 +134,18 @@ export default async function handler(req, res) {
                 const underspendThreshold = budget.alert_underspend_threshold || 50;
                 const overspendThreshold = budget.alert_overspend_threshold || 120;
                 
+                console.log(`Thresholds: under=${underspendThreshold}%, over=${overspendThreshold}%`);
+                
                 let alertType = null;
                 
                 if (pacingPercent > overspendThreshold && notifSettings.alert_overspending !== false) {
                     alertType = 'overspending';
+                    console.log(`🚨 OVERSPEND DETECTED: ${pacingPercent.toFixed(1)}% > ${overspendThreshold}%`);
                 } else if (pacingPercent < underspendThreshold && actualSpend > 0.01 && notifSettings.alert_underspending !== false) {
                     alertType = 'severely-underspending';
+                    console.log(`🚨 UNDERSPEND DETECTED: ${pacingPercent.toFixed(1)}% < ${underspendThreshold}%`);
+                } else {
+                    console.log(`✅ ON TRACK: ${underspendThreshold}% <= ${pacingPercent.toFixed(1)}% <= ${overspendThreshold}%`);
                 }
                 
                 if (alertType) {
