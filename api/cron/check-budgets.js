@@ -26,7 +26,8 @@ export default async function handler(req, res) {
     const results = {
         accountBudgetsChecked: 0,
         alertsSent: 0,
-        errors: []
+        errors: [],
+        debug: []
     };
 
     try {
@@ -134,6 +135,17 @@ export default async function handler(req, res) {
                 const underspendThreshold = budget.alert_underspend_threshold || 50;
                 const overspendThreshold = budget.alert_overspend_threshold || 120;
                 
+                // Add debug info
+                results.debug.push({
+                    account: budget.ad_account_name,
+                    actualSpend,
+                    expectedSpend,
+                    pacingPercent: pacingPercent.toFixed(1),
+                    underspendThreshold,
+                    overspendThreshold,
+                    shouldAlert: pacingPercent > overspendThreshold || pacingPercent < underspendThreshold
+                });
+                
                 console.log(`Thresholds: under=${underspendThreshold}%, over=${overspendThreshold}%`);
                 
                 let alertType = null;
@@ -181,7 +193,8 @@ export default async function handler(req, res) {
         return res.status(200).json({ 
             success: true, 
             message: `Checked ${results.accountBudgetsChecked} account budgets, sent ${results.alertsSent} alerts`,
-            results 
+            results,
+            debug: results.debug || []
         });
         
     } catch (error) {
