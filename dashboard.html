@@ -598,6 +598,9 @@
             // Load organization and selected accounts
             const hasSelectedAccounts = await loadOrganizationAndAccounts();
             
+            // Save Meta token to organization for cron job access
+            await saveMetaTokenToOrganization();
+            
             // Load budgets
             await loadBudgetsFromSupabase();
             
@@ -636,6 +639,37 @@
                 'total': 'Total: Compares all-time spend with total campaign budget'
             };
             document.getElementById('budget-type-hint').textContent = hints[type];
+        }
+        
+        // Save Meta access token to organization for cron job access
+        async function saveMetaTokenToOrganization() {
+            if (!accessToken || !currentOrganization) return;
+            
+            try {
+                // Check if token already saved
+                if (currentOrganization.meta_access_token) {
+                    console.log('Meta token already saved to organization');
+                    return;
+                }
+                
+                // Save token to organization
+                const { error } = await supabaseClient
+                    .from('organizations')
+                    .update({
+                        meta_access_token: accessToken,
+                        meta_token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentOrganization.id);
+                
+                if (error) {
+                    console.error('Failed to save Meta token:', error);
+                } else {
+                    console.log('✅ Meta token saved to organization for cron job access');
+                }
+            } catch (e) {
+                console.error('Error saving Meta token:', e);
+            }
         }
 
         // Auth functions
