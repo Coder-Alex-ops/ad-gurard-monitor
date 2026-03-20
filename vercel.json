@@ -4,6 +4,8 @@
     { "source": "/", "destination": "/home.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/forgot-password", "destination": "/forgot-password.html" },
+    { "source": "/reset-password", "destination": "/reset-password.html" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "crons": [
