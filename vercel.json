@@ -1,17 +1,77 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/", "destination": "/home.html" },
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/forgot-password", "destination": "/forgot-password.html" },
-    { "source": "/reset-password", "destination": "/reset-password.html" },
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+  "public": true,
+  "functions": {
+    "api/**/*.js": {
+      "memory": 256,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/meta/accounts",
+      "dest": "/api/meta/accounts.js"
+    },
+    {
+      "src": "/api/meta/campaigns",
+      "dest": "/api/meta/campaigns.js"
+    },
+    {
+      "src": "/api/meta/top-ads",
+      "dest": "/api/meta/top-ads.js"
+    },
+    {
+      "src": "/api/meta/forecaster",
+      "dest": "/api/meta/forecaster.js"
+    },
+    {
+      "src": "/api/auth/meta-callback",
+      "dest": "/api/auth/meta-callback.js"
+    },
+    {
+      "src": "/api/auth/meta-status",
+      "dest": "/api/auth/meta-status.js"
+    },
+    {
+      "src": "/api/cron/budget-check",
+      "dest": "/api/cron/budget-check.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
   ],
   "crons": [
     {
-      "path": "/api/cron/check-budgets",
+      "path": "/api/cron/budget-check",
       "schedule": "0 18 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
     }
   ]
 }
