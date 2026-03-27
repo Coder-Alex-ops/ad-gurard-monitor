@@ -3,716 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data:;">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta name="robots" content="noindex, nofollow">
-    <title>AdGuardian Budget Monitor - Login</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+    <title>AdGuardian - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-500: #06b6d4;
-            --primary-600: #0891b2;
-            --primary-700: #0e7490;
-            --neutral-50: #f8fafc;
-            --neutral-100: #f1f5f9;
-            --neutral-200: #e2e8f0;
-            --neutral-300: #cbd5e1;
-            --neutral-400: #94a3b8;
-            --neutral-500: #64748b;
-            --neutral-600: #475569;
-            --neutral-700: #334155;
-            --neutral-800: #1e293b;
-            --neutral-900: #0f172a;
-            --danger: #ef4444;
-            --danger-bg: #fee2e2;
-            --success: #10b981;
-            --success-bg: #d1fae5;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--neutral-900) 0%, var(--neutral-800) 50%, var(--primary-700) 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .auth-container {
-            width: 100%;
-            max-width: 420px;
-        }
-        
-        .logo {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        
-        .logo-icon {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.3);
-        }
-        
-        .logo-icon svg {
-            width: 36px;
-            height: 36px;
-            color: white;
-        }
-        
-        .logo h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        
-        .logo p {
-            color: var(--neutral-400);
-            font-size: 14px;
-            margin-top: 4px;
-        }
-        
-        .auth-card {
-            background: white;
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--neutral-100);
-            padding: 4px;
-            border-radius: 10px;
-            margin-bottom: 24px;
-        }
-        
-        .tab {
-            flex: 1;
-            padding: 10px 16px;
-            border: none;
-            background: transparent;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--neutral-500);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .tab.active {
-            background: white;
-            color: var(--neutral-900);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .tab:hover:not(.active) {
-            color: var(--neutral-700);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--neutral-700);
-            margin-bottom: 6px;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid var(--neutral-200);
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 15px;
-            color: var(--neutral-900);
-            transition: all 0.2s ease;
-            background: var(--neutral-50);
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-500);
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-            background: white;
-        }
-        
-        .form-group input::placeholder {
-            color: var(--neutral-400);
-        }
-        
-        .password-field {
-            position: relative;
-        }
-        
-        .password-toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--neutral-400);
-            cursor: pointer;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .password-toggle:hover {
-            color: var(--neutral-600);
-        }
-        
-        .password-toggle svg {
-            width: 20px;
-            height: 20px;
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-            color: white;
-            box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
-        }
-        
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .btn svg {
-            width: 18px;
-            height: 18px;
-        }
-        
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .alert {
-            padding: 12px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .alert.show {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        
-        .alert-error {
-            background: var(--danger-bg);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        
-        .alert-success {
-            background: var(--success-bg);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        
-        .alert svg {
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-        
-        .forgot-password {
-            text-align: right;
-            margin-top: -12px;
-            margin-bottom: 20px;
-        }
-        
-        .forgot-password a {
-            font-size: 13px;
-            color: var(--primary-600);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .forgot-password a:hover {
-            text-decoration: underline;
-        }
-        
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin: 24px 0;
-        }
-        
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--neutral-200);
-        }
-        
-        .divider span {
-            font-size: 13px;
-            color: var(--neutral-400);
-            font-weight: 500;
-        }
-        
-        .security-notice {
-            margin-top: 24px;
-            padding: 12px;
-            background: var(--neutral-50);
-            border-radius: 8px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        
-        .security-notice svg {
-            width: 18px;
-            height: 18px;
-            color: var(--primary-600);
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-        
-        .security-notice p {
-            font-size: 12px;
-            color: var(--neutral-500);
-            line-height: 1.5;
-        }
-        
-        .form-panel {
-            display: none;
-        }
-        
-        .form-panel.active {
-            display: block;
-        }
-        
-        .password-requirements {
-            margin-top: 8px;
-            font-size: 12px;
-            color: var(--neutral-500);
-        }
-        
-        .password-requirements ul {
-            margin-top: 4px;
-            padding-left: 16px;
-        }
-        
-        .password-requirements li {
-            margin-bottom: 2px;
-        }
-        
-        .password-requirements li.valid {
-            color: var(--success);
-        }
-        
-        .password-requirements li.invalid {
-            color: var(--neutral-400);
-        }
-        
-        footer {
-            text-align: center;
-            margin-top: 24px;
-            color: var(--neutral-400);
-            font-size: 13px;
-        }
-        
-        footer a {
-            color: var(--neutral-300);
-            text-decoration: none;
-        }
-        
-        footer a:hover {
-            text-decoration: underline;
+        * { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
         }
     </style>
 </head>
-<body>
-    <div class="auth-container">
-        <div class="logo">
-            <div class="logo-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    
+    <div class="w-full max-w-md">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
             </div>
-            <h1>AdGuard Budget Monitor</h1>
-            <p>Real-time advertising budget tracking</p>
+            <h1 class="text-2xl font-bold text-white">AdGuardian</h1>
+            <p class="text-gray-400 text-sm mt-1">Ad Budget Monitoring</p>
         </div>
         
-        <div class="auth-card">
-            <div class="tabs">
-                <button class="tab active" data-tab="login">Sign In</button>
-                <button class="tab" data-tab="register">Create Account</button>
+        <!-- Auth Card -->
+        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+            
+            <!-- Tabs -->
+            <div class="flex bg-white/5 rounded-lg p-1 mb-6">
+                <button id="loginTab" class="flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all bg-white/10 text-white">
+                    Sign In
+                </button>
+                <button id="registerTab" class="flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-white">
+                    Create Account
+                </button>
             </div>
             
-            <div id="alert" class="alert">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                </svg>
-                <span id="alertText"></span>
-            </div>
+            <!-- Alert -->
+            <div id="alert" class="hidden mb-4 p-3 rounded-lg text-sm"></div>
             
             <!-- Login Form -->
-            <div id="loginPanel" class="form-panel active">
-                <form id="loginForm" novalidate>
-                    <div class="form-group">
-                        <label for="loginEmail">Email address</label>
-                        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" required>
+            <form id="loginForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+                        <input type="email" id="loginEmail" required
+                            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            placeholder="you@example.com">
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <div class="password-field">
-                            <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required>
-                            <button type="button" class="password-toggle" aria-label="Toggle password visibility">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="eye-open">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="eye-closed" style="display: none;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                </svg>
-                            </button>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+                        <input type="password" id="loginPassword" required
+                            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            placeholder="••••••••">
                     </div>
-                    
-                    <div class="forgot-password">
-                        <a href="#" id="forgotPasswordLink">Forgot password?</a>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="loginBtn">
-                        <span>Sign In</span>
-                    </button>
-                </form>
-            </div>
+                </div>
+                
+                <button type="submit" id="loginBtn"
+                    class="w-full mt-6 py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    Sign In
+                </button>
+                
+                <div class="mt-4 text-center">
+                    <a href="#" id="forgotLink" class="text-sm text-indigo-400 hover:text-indigo-300">Forgot password?</a>
+                </div>
+            </form>
             
-            <!-- Register Form -->
-            <div id="registerPanel" class="form-panel">
-                <form id="registerForm" novalidate>
-                    <div class="form-group">
-                        <label for="registerEmail">Email address</label>
-                        <input type="email" id="registerEmail" placeholder="you@example.com" autocomplete="email" required>
+            <!-- Register Form (hidden by default) -->
+            <form id="registerForm" class="hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+                        <input type="email" id="registerEmail" required
+                            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            placeholder="you@example.com">
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="registerPassword">Password</label>
-                        <div class="password-field">
-                            <input type="password" id="registerPassword" placeholder="Create a strong password" autocomplete="new-password" required minlength="8">
-                            <button type="button" class="password-toggle" aria-label="Toggle password visibility">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="eye-open">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="eye-closed" style="display: none;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="password-requirements">
-                            <ul>
-                                <li id="req-length" class="invalid">At least 8 characters</li>
-                                <li id="req-upper" class="invalid">One uppercase letter</li>
-                                <li id="req-lower" class="invalid">One lowercase letter</li>
-                                <li id="req-number" class="invalid">One number</li>
-                            </ul>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+                        <input type="password" id="registerPassword" required minlength="6"
+                            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            placeholder="Min 6 characters">
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="confirmPassword">Confirm Password</label>
-                        <div class="password-field">
-                            <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password" required>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1.5">Confirm Password</label>
+                        <input type="password" id="confirmPassword" required
+                            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                            placeholder="••••••••">
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="registerBtn">
-                        <span>Create Account</span>
-                    </button>
-                </form>
-            </div>
-            
-            <div class="security-notice">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                </svg>
-                <p>Your data is encrypted and securely stored. We use industry-standard authentication and never store your ad platform credentials in plain text.</p>
-            </div>
+                </div>
+                
+                <button type="submit" id="registerBtn"
+                    class="w-full mt-6 py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    Create Account
+                </button>
+            </form>
         </div>
         
-        <footer>
-            <p>© 2026 AdGuard Budget Monitor · <a href="#">Privacy</a> · <a href="#">Terms</a></p>
-        </footer>
+        <!-- Footer -->
+        <p class="text-center text-gray-500 text-xs mt-6">
+            © 2026 AdGuardian · <a href="/privacy.html" class="hover:text-gray-400">Privacy</a> · <a href="/terms.html" class="hover:text-gray-400">Terms</a>
+        </p>
     </div>
     
     <script>
-        // ==================================================
-        // SECURITY: Input Sanitization
-        // ==================================================
-        const SecurityUtils = {
-            // Sanitize HTML to prevent XSS
-            sanitizeHTML(str) {
-                if (typeof str !== 'string') return '';
-                const div = document.createElement('div');
-                div.textContent = str;
-                return div.innerHTML;
-            },
-            
-            // Validate email format
-            isValidEmail(email) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                return emailRegex.test(email);
-            },
-            
-            // Check password strength
-            checkPasswordStrength(password) {
-                return {
-                    length: password.length >= 8,
-                    upper: /[A-Z]/.test(password),
-                    lower: /[a-z]/.test(password),
-                    number: /[0-9]/.test(password)
-                };
-            },
-            
-            // Rate limiting for auth attempts
-            rateLimiter: {
-                attempts: 0,
-                lastAttempt: 0,
-                maxAttempts: 5,
-                windowMs: 60000, // 1 minute
-                
-                canAttempt() {
-                    const now = Date.now();
-                    if (now - this.lastAttempt > this.windowMs) {
-                        this.attempts = 0;
-                    }
-                    return this.attempts < this.maxAttempts;
-                },
-                
-                recordAttempt() {
-                    this.attempts++;
-                    this.lastAttempt = Date.now();
-                },
-                
-                getRemainingTime() {
-                    return Math.ceil((this.windowMs - (Date.now() - this.lastAttempt)) / 1000);
-                }
-            }
-        };
-        
-        // ==================================================
-        // SUPABASE INITIALIZATION
-        // ==================================================
+        // ============================================
+        // SUPABASE CONFIG
+        // ============================================
         const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_uJj_aUiagop3jgsM_yAzYg_bo0n2Npt';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true,
-                flowType: 'pkce' // More secure than implicit flow
-            }
-        });
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impwcm52ZnRkZm5oc2ZldW94a2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTE3MTUsImV4cCI6MjA4ODk2NzcxNX0.YqJcKE-GJPCdo6nNly4FTOMHx_N0Bvj4-DIFcoU6-Hk';
         
-        // ==================================================
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // ============================================
         // DOM ELEMENTS
-        // ==================================================
-        const tabs = document.querySelectorAll('.tab');
-        const loginPanel = document.getElementById('loginPanel');
-        const registerPanel = document.getElementById('registerPanel');
+        // ============================================
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
-        const loginBtn = document.getElementById('loginBtn');
-        const registerBtn = document.getElementById('registerBtn');
         const alert = document.getElementById('alert');
-        const alertText = document.getElementById('alertText');
-        const passwordToggles = document.querySelectorAll('.password-toggle');
-        const registerPassword = document.getElementById('registerPassword');
-        const confirmPassword = document.getElementById('confirmPassword');
-        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const forgotLink = document.getElementById('forgotLink');
         
-        // ==================================================
+        // ============================================
         // TAB SWITCHING
-        // ==================================================
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                hideAlert();
-                
-                if (tab.dataset.tab === 'login') {
-                    loginPanel.classList.add('active');
-                    registerPanel.classList.remove('active');
-                } else {
-                    loginPanel.classList.remove('active');
-                    registerPanel.classList.add('active');
-                }
-            });
+        // ============================================
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('bg-white/10', 'text-white');
+            loginTab.classList.remove('text-gray-400');
+            registerTab.classList.remove('bg-white/10', 'text-white');
+            registerTab.classList.add('text-gray-400');
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            hideAlert();
         });
         
-        // ==================================================
-        // PASSWORD VISIBILITY TOGGLE
-        // ==================================================
-        passwordToggles.forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                const input = toggle.previousElementSibling;
-                const eyeOpen = toggle.querySelector('.eye-open');
-                const eyeClosed = toggle.querySelector('.eye-closed');
-                
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    eyeOpen.style.display = 'none';
-                    eyeClosed.style.display = 'block';
-                } else {
-                    input.type = 'password';
-                    eyeOpen.style.display = 'block';
-                    eyeClosed.style.display = 'none';
-                }
-            });
+        registerTab.addEventListener('click', () => {
+            registerTab.classList.add('bg-white/10', 'text-white');
+            registerTab.classList.remove('text-gray-400');
+            loginTab.classList.remove('bg-white/10', 'text-white');
+            loginTab.classList.add('text-gray-400');
+            registerForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            hideAlert();
         });
         
-        // ==================================================
-        // PASSWORD STRENGTH INDICATOR
-        // ==================================================
-        registerPassword.addEventListener('input', (e) => {
-            const strength = SecurityUtils.checkPasswordStrength(e.target.value);
-            
-            document.getElementById('req-length').className = strength.length ? 'valid' : 'invalid';
-            document.getElementById('req-upper').className = strength.upper ? 'valid' : 'invalid';
-            document.getElementById('req-lower').className = strength.lower ? 'valid' : 'invalid';
-            document.getElementById('req-number').className = strength.number ? 'valid' : 'invalid';
-        });
-        
-        // ==================================================
+        // ============================================
         // ALERT FUNCTIONS
-        // ==================================================
+        // ============================================
         function showAlert(message, type = 'error') {
-            alert.className = `alert show alert-${type}`;
-            alertText.textContent = SecurityUtils.sanitizeHTML(message);
-            
-            // Update icon based on type
-            const icon = alert.querySelector('svg');
-            if (type === 'success') {
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />';
-            } else {
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />';
-            }
+            alert.textContent = message;
+            alert.className = `mb-4 p-3 rounded-lg text-sm ${type === 'error' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30'}`;
+            alert.classList.remove('hidden');
         }
         
         function hideAlert() {
-            alert.classList.remove('show');
+            alert.classList.add('hidden');
         }
         
-        function setLoading(button, loading) {
-            const span = button.querySelector('span');
-            if (loading) {
-                button.disabled = true;
-                span.innerHTML = '<div class="spinner"></div>';
-            } else {
-                button.disabled = false;
-                span.textContent = button === loginBtn ? 'Sign In' : 'Create Account';
-            }
+        function setLoading(btn, loading) {
+            btn.disabled = loading;
+            btn.textContent = loading ? 'Please wait...' : (btn.id === 'loginBtn' ? 'Sign In' : 'Create Account');
         }
         
-        // ==================================================
-        // LOGIN HANDLER
-        // ==================================================
+        // ============================================
+        // LOGIN
+        // ============================================
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             hideAlert();
             
-            // Rate limiting check
-            if (!SecurityUtils.rateLimiter.canAttempt()) {
-                const remaining = SecurityUtils.rateLimiter.getRemainingTime();
-                showAlert(`Too many attempts. Please wait ${remaining} seconds.`);
-                return;
-            }
-            
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
             
-            // Validate email
-            if (!SecurityUtils.isValidEmail(email)) {
-                showAlert('Please enter a valid email address.');
+            if (!email || !password) {
+                showAlert('Please fill in all fields.');
                 return;
             }
             
-            // Validate password
-            if (password.length < 1) {
-                showAlert('Please enter your password.');
-                return;
-            }
-            
-            setLoading(loginBtn, true);
-            SecurityUtils.rateLimiter.recordAttempt();
+            setLoading(btn, true);
             
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -721,56 +192,50 @@
                 });
                 
                 if (error) {
-                    // Generic error message to prevent user enumeration
-                    showAlert('Invalid email or password. Please try again.');
-                    setLoading(loginBtn, false);
+                    showAlert(error.message);
+                    setLoading(btn, false);
                     return;
                 }
                 
-                // Success - redirect to dashboard
                 showAlert('Login successful! Redirecting...', 'success');
                 setTimeout(() => {
                     window.location.href = '/dashboard.html';
                 }, 500);
                 
             } catch (err) {
-                console.error('Login error:', err);
                 showAlert('An error occurred. Please try again.');
-                setLoading(loginBtn, false);
+                setLoading(btn, false);
             }
         });
         
-        // ==================================================
-        // REGISTER HANDLER
-        // ==================================================
+        // ============================================
+        // REGISTER
+        // ============================================
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             hideAlert();
             
             const email = document.getElementById('registerEmail').value.trim();
-            const password = registerPassword.value;
-            const confirm = confirmPassword.value;
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('registerBtn');
             
-            // Validate email
-            if (!SecurityUtils.isValidEmail(email)) {
-                showAlert('Please enter a valid email address.');
+            if (!email || !password || !confirm) {
+                showAlert('Please fill in all fields.');
                 return;
             }
             
-            // Validate password strength
-            const strength = SecurityUtils.checkPasswordStrength(password);
-            if (!strength.length || !strength.upper || !strength.lower || !strength.number) {
-                showAlert('Password does not meet requirements.');
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters.');
                 return;
             }
             
-            // Confirm password match
             if (password !== confirm) {
                 showAlert('Passwords do not match.');
                 return;
             }
             
-            setLoading(registerBtn, true);
+            setLoading(btn, true);
             
             try {
                 const { data, error } = await supabaseClient.auth.signUp({
@@ -782,18 +247,13 @@
                 });
                 
                 if (error) {
-                    if (error.message.includes('already registered')) {
-                        showAlert('This email is already registered. Please sign in.');
-                    } else {
-                        showAlert('Registration failed. Please try again.');
-                    }
-                    setLoading(registerBtn, false);
+                    showAlert(error.message);
+                    setLoading(btn, false);
                     return;
                 }
                 
-                // Check if email confirmation is required
                 if (data.user && !data.session) {
-                    showAlert('Please check your email to confirm your account.', 'success');
+                    showAlert('Check your email to confirm your account!', 'success');
                 } else if (data.session) {
                     showAlert('Account created! Redirecting...', 'success');
                     setTimeout(() => {
@@ -801,30 +261,24 @@
                     }, 500);
                 }
                 
-                setLoading(registerBtn, false);
+                setLoading(btn, false);
                 
             } catch (err) {
-                console.error('Registration error:', err);
                 showAlert('An error occurred. Please try again.');
-                setLoading(registerBtn, false);
+                setLoading(btn, false);
             }
         });
         
-        // ==================================================
-        // FORGOT PASSWORD HANDLER
-        // ==================================================
-        forgotPasswordLink.addEventListener('click', async (e) => {
+        // ============================================
+        // FORGOT PASSWORD
+        // ============================================
+        forgotLink.addEventListener('click', async (e) => {
             e.preventDefault();
             
             const email = document.getElementById('loginEmail').value.trim();
             
             if (!email) {
-                showAlert('Please enter your email address first.');
-                return;
-            }
-            
-            if (!SecurityUtils.isValidEmail(email)) {
-                showAlert('Please enter a valid email address.');
+                showAlert('Enter your email first, then click Forgot password.');
                 return;
             }
             
@@ -833,27 +287,19 @@
                     redirectTo: `${window.location.origin}/reset-password.html`
                 });
                 
-                // Always show success to prevent user enumeration
-                showAlert('If an account exists, you will receive a password reset email.', 'success');
-                
+                showAlert('If an account exists, you will receive a reset email.', 'success');
             } catch (err) {
-                console.error('Password reset error:', err);
                 showAlert('An error occurred. Please try again.');
             }
         });
         
-        // ==================================================
-        // CHECK EXISTING SESSION
-        // ==================================================
-        (async function checkSession() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                
-                if (session) {
-                    window.location.href = '/dashboard.html';
-                }
-            } catch (err) {
-                console.error('Session check error:', err);
+        // ============================================
+        // CHECK SESSION ON LOAD
+        // ============================================
+        (async function() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                window.location.href = '/dashboard.html';
             }
         })();
     </script>
