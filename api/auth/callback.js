@@ -1,135 +1,116 @@
-import { createClient } from 'redis';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+// Vercel Serverless Function: Meta OAuth Callback
+// Записва Meta токени в Supabase (НЕ Redis)
 
-const supabase = createSupabaseClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-);
+import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-    const { code, error, error_description } = req.query;
+  const { code, error, error_description } = req.query;
 
-    // Handle OAuth errors
-    if (error) {
-        console.error('OAuth error:', error, error_description);
-        return res.redirect(`/dashboard.html?error=${encodeURIComponent(error_description || error)}`);
+  // Handle OAuth errors
+  if (error) {
+    console.error('OAuth error:', error, error_description);
+    return res.redirect('/auth-callback.html?error=' + encodeURIComponent(error_description || error));
+  }
+
+  if (!code) {
+    return res.redirect('/auth-callback.html?error=' + encodeURIComponent('No authorization code'));
+  }
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://graph.facebook.com/v21.0/oauth/access_token?' + new URLSearchParams({
+      client_id: process.env.META_APP_ID,
+      client_secret: process.env.META_APP_SECRET,
+      redirect_uri: `${getBaseUrl(req)}/auth-callback.html`,
+      code: code
+    }));
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error) {
+      console.error('Token exchange error:', tokenData.error);
+      return res.redirect('/auth-callback.html?error=' + encodeURIComponent(tokenData.error.message || 'Token exchange failed'));
     }
 
-    // Validate code
-    if (!code) {
-        return res.redirect('/dashboard.html?error=No authorization code received');
+    const { access_token, expires_in } = tokenData;
+
+    // Exchange for long-lived token
+    const longTokenResponse = await fetch('https://graph.facebook.com/v21.0/oauth/access_token?' + new URLSearchParams({
+      grant_type: 'fb_exchange_token',
+      client_id: process.env.META_APP_ID,
+      client_secret: process.env.META_APP_SECRET,
+      fb_exchange_token: access_token
+    }));
+
+    const longTokenData = await longTokenResponse.json();
+    const longLivedToken = longTokenData.access_token || access_token;
+    const tokenExpiresIn = longTokenData.expires_in || expires_in || 5184000; // ~60 days default
+
+    // Get Meta user info
+    const meResponse = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${longLivedToken}`);
+    const meData = await meResponse.json();
+
+    if (meData.error) {
+      console.error('Me API error:', meData.error);
+      return res.redirect('/auth-callback.html?error=' + encodeURIComponent('Failed to get user info'));
     }
 
-    try {
-        // Exchange code for access token
-        const tokenUrl = 'https://graph.facebook.com/v19.0/oauth/access_token';
-        const params = new URLSearchParams({
-            client_id: process.env.META_APP_ID,
-            client_secret: process.env.META_APP_SECRET,
-            redirect_uri: 'https://ad-gurard-monitor.vercel.app/api/auth/callback',
-            code: code
-        });
+    const metaUserId = meData.id;
 
-        const tokenResponse = await fetch(`${tokenUrl}?${params}`);
-        const tokenData = await tokenResponse.json();
+    // Get ad accounts
+    const accountsResponse = await fetch(`https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,account_id,currency,account_status&access_token=${longLivedToken}`);
+    const accountsData = await accountsResponse.json();
+    const adAccounts = accountsData.data || [];
 
-        if (tokenData.error) {
-            console.error('Token exchange error:', tokenData.error);
-            return res.redirect(`/dashboard.html?error=${encodeURIComponent(tokenData.error.message)}`);
-        }
+    // Calculate token expiry
+    const tokenExpiresAt = new Date(Date.now() + tokenExpiresIn * 1000).toISOString();
 
-        const { access_token, expires_in } = tokenData;
+    // Get user_id from Supabase session cookie
+    // Since we can't easily get the Supabase session from cookies server-side,
+    // we'll store with meta_user_id and let the frontend link it
 
-        // Get long-lived token (60 days)
-        const longLivedParams = new URLSearchParams({
-            grant_type: 'fb_exchange_token',
-            client_id: process.env.META_APP_ID,
-            client_secret: process.env.META_APP_SECRET,
-            fb_exchange_token: access_token
-        });
+    // Initialize Supabase admin client
+    const supabase = createClient(
+      process.env.SUPABASE_URL || 'https://jprnvftdfnhsfeuoxkkh.supabase.co',
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
-        const longLivedResponse = await fetch(`${tokenUrl}?${longLivedParams}`);
-        const longLivedData = await longLivedResponse.json();
+    // Upsert meta connection (insert or update if exists)
+    const { data, error: dbError } = await supabase
+      .from('meta_connections')
+      .upsert({
+        meta_user_id: metaUserId,
+        access_token: longLivedToken,
+        token_expires_at: tokenExpiresAt,
+        ad_accounts: adAccounts,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'meta_user_id'
+      })
+      .select();
 
-        const finalToken = longLivedData.access_token || access_token;
-        const finalExpiry = longLivedData.expires_in || expires_in;
-
-        // Get user info
-        const userResponse = await fetch(
-            `https://graph.facebook.com/v19.0/me?fields=id,name,email&access_token=${finalToken}`
-        );
-        const userData = await userResponse.json();
-
-        if (userData.error) {
-            console.error('User info error:', userData.error);
-            return res.redirect(`/dashboard.html?error=${encodeURIComponent(userData.error.message)}`);
-        }
-
-        // Store in Redis
-        const redis = createClient({
-            url: process.env.ad_monitor_kv_REDIS_URL
-        });
-
-        await redis.connect();
-
-        const sessionId = generateSessionId();
-        const sessionData = {
-            userId: userData.id,
-            userName: userData.name,
-            userEmail: userData.email || null,
-            accessToken: finalToken,
-            expiresAt: Date.now() + (finalExpiry * 1000),
-            createdAt: Date.now()
-        };
-
-        // Store session (expires in 60 days)
-        await redis.set(`session:${sessionId}`, JSON.stringify(sessionData), {
-            EX: finalExpiry || 5184000 // 60 days default
-        });
-
-        await redis.disconnect();
-        
-        // Also store token in Supabase for cron job access
-        // First, find the user by email in auth.users
-        if (userData.email) {
-            const { data: authUser } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('email', userData.email)
-                .single();
-            
-            if (authUser) {
-                // Update organization with Meta token
-                const tokenExpiresAt = new Date(Date.now() + (finalExpiry * 1000)).toISOString();
-                
-                await supabase
-                    .from('organizations')
-                    .update({
-                        meta_access_token: finalToken,
-                        meta_token_expires_at: tokenExpiresAt,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('owner_id', authUser.id);
-                
-                console.log(`Saved Meta token to Supabase for user ${userData.email}`);
-            }
-        }
-
-        // Set session cookie and redirect
-        res.setHeader('Set-Cookie', `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${finalExpiry || 5184000}`);
-        return res.redirect('/dashboard.html');
-
-    } catch (error) {
-        console.error('OAuth callback error:', error);
-        return res.redirect(`/dashboard.html?error=${encodeURIComponent('Authentication failed. Please try again.')}`);
+    if (dbError) {
+      console.error('Database error:', dbError);
+      // Still redirect to success - we'll link the user later
     }
+
+    // Store meta_user_id in a cookie so frontend can link it
+    res.setHeader('Set-Cookie', [
+      `meta_user_id=${metaUserId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=300`,
+      `meta_connected=true; Path=/; Secure; SameSite=Lax; Max-Age=300`
+    ]);
+
+    // Redirect to success
+    return res.redirect('/auth-callback.html?success=true&accounts=' + adAccounts.length);
+
+  } catch (err) {
+    console.error('Callback error:', err);
+    return res.redirect('/auth-callback.html?error=' + encodeURIComponent('Server error'));
+  }
 }
 
-function generateSessionId() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 64; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+function getBaseUrl(req) {
+  const host = req.headers.host;
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  return `${protocol}://${host}`;
 }
