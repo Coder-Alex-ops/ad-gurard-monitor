@@ -3,368 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://graph.facebook.com;">
-    <title>Connecting... | AdGuardian Monitor</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <style>
-        :root {
-            --primary-500: #06b6d4;
-            --primary-600: #0891b2;
-            --neutral-50: #f8fafc;
-            --neutral-100: #f1f5f9;
-            --neutral-800: #1e293b;
-            --neutral-900: #0f172a;
-            --danger: #ef4444;
-            --success: #10b981;
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--neutral-900), var(--neutral-800));
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-        
-        .callback-card {
-            background: white;
-            border-radius: 16px;
-            padding: 48px;
-            max-width: 440px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-        
-        .logo-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 20px;
-            color: white;
-        }
-        
-        .logo-text {
-            font-weight: 700;
-            font-size: 22px;
-            color: var(--neutral-900);
-        }
-        
-        .logo-text span {
-            color: var(--primary-500);
-        }
-        
-        .status {
-            margin-bottom: 24px;
-        }
-        
-        .status-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .status-icon.loading {
-            background: var(--neutral-100);
-        }
-        
-        .status-icon.success {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-        
-        .status-icon.error {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-        }
-        
-        .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid var(--neutral-100);
-            border-top-color: var(--primary-500);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .status-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--neutral-900);
-            margin-bottom: 8px;
-        }
-        
-        .status-message {
-            font-size: 15px;
-            color: #64748b;
-            line-height: 1.6;
-        }
-        
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            border: none;
-            transition: all 0.15s ease;
-            margin-top: 24px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        .debug-info {
-            margin-top: 24px;
-            padding: 16px;
-            background: var(--neutral-50);
-            border-radius: 8px;
-            text-align: left;
-            font-size: 12px;
-            font-family: 'JetBrains Mono', monospace;
-            color: #64748b;
-            word-break: break-all;
-        }
-    </style>
+    <title>Connecting... - AdGuardian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>* { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body>
-    <div class="callback-card">
-        <div class="logo">
-            <div class="logo-icon">AG</div>
-            <div class="logo-text">AdGuard<span>Monitor</span></div>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+    
+    <div class="bg-slate-800 rounded-2xl border border-slate-700 p-8 max-w-md w-full text-center">
+        <!-- Logo -->
+        <div class="flex items-center justify-center gap-3 mb-8">
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <span class="text-white font-bold text-lg">AG</span>
+            </div>
+            <span class="text-white font-semibold text-xl">AdGuardian</span>
         </div>
         
         <!-- Loading State -->
-        <div class="status" id="loadingState">
-            <div class="status-icon loading">
-                <div class="spinner"></div>
-            </div>
-            <h1 class="status-title">Connecting Your Account</h1>
-            <p class="status-message">Please wait while we securely connect your Meta Ads account...</p>
+        <div id="loading">
+            <div class="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <h1 class="text-xl font-bold text-white mb-2">Connecting Your Account</h1>
+            <p class="text-slate-400">Please wait while we connect your Meta Ads account...</p>
         </div>
         
         <!-- Success State -->
-        <div class="status hidden" id="successState">
-            <div class="status-icon success">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
+        <div id="success" class="hidden">
+            <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
             </div>
-            <h1 class="status-title">Successfully Connected!</h1>
-            <p class="status-message">Your Meta Ads account has been linked. Redirecting to dashboard...</p>
+            <h1 class="text-xl font-bold text-white mb-2">Successfully Connected!</h1>
+            <p class="text-slate-400 mb-2">Your Meta Ads account is now linked.</p>
+            <p class="text-emerald-400 text-sm" id="accountCount"></p>
+            <p class="text-slate-500 text-sm mt-4">Redirecting to dashboard...</p>
         </div>
         
         <!-- Error State -->
-        <div class="status hidden" id="errorState">
-            <div class="status-icon error">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
+        <div id="error" class="hidden">
+            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </div>
-            <h1 class="status-title">Connection Failed</h1>
-            <p class="status-message" id="errorMessage">Something went wrong. Please try again.</p>
-            <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">
+            <h1 class="text-xl font-bold text-white mb-2">Connection Failed</h1>
+            <p class="text-slate-400 mb-6" id="errorMessage">Something went wrong. Please try again.</p>
+            <a href="/dashboard" class="inline-block px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
                 Back to Dashboard
-            </button>
+            </a>
         </div>
     </div>
 
     <script>
-        // ============================================
-        // CONFIGURATION
-        // ============================================
         const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'; // Replace with actual key
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impwcm52ZnRkZm5oc2ZldW94a2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTE3MTUsImV4cCI6MjA4ODk2NzcxNX0.YqJcKE-GJPCdo6nNly4FTOMHx_N0Bvj4-DIFcoU6-Hk';
         
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // ============================================
-        // STATE MANAGEMENT
-        // ============================================
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         function showState(state) {
-            document.getElementById('loadingState').classList.add('hidden');
-            document.getElementById('successState').classList.add('hidden');
-            document.getElementById('errorState').classList.add('hidden');
-            document.getElementById(state + 'State').classList.remove('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('success').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById(state).classList.remove('hidden');
         }
-        
+
         function showError(message) {
             document.getElementById('errorMessage').textContent = message;
             showState('error');
         }
-        
-        // ============================================
-        // SECURITY: Validate OAuth State
-        // ============================================
-        function validateState(returnedState) {
-            const savedState = sessionStorage.getItem('oauth_state');
-            sessionStorage.removeItem('oauth_state'); // Clear immediately after reading
-            
-            if (!savedState || !returnedState) {
-                return false;
-            }
-            
-            // Constant-time comparison to prevent timing attacks
-            if (savedState.length !== returnedState.length) {
-                return false;
-            }
-            
-            let result = 0;
-            for (let i = 0; i < savedState.length; i++) {
-                result |= savedState.charCodeAt(i) ^ returnedState.charCodeAt(i);
-            }
-            
-            return result === 0;
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
         }
-        
-        // ============================================
-        // MAIN CALLBACK HANDLER
-        // ============================================
+
         async function handleCallback() {
             const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            const state = urlParams.get('state');
+            const success = urlParams.get('success');
             const error = urlParams.get('error');
-            const errorDescription = urlParams.get('error_description');
-            
-            // Handle OAuth errors
+            const accounts = urlParams.get('accounts');
+            const code = urlParams.get('code');
+
+            // If we have a code, redirect to API to process it
+            if (code) {
+                window.location.href = '/api/auth/callback?code=' + encodeURIComponent(code);
+                return;
+            }
+
+            // Handle success from API redirect
+            if (success === 'true') {
+                // Link meta connection to current user
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                
+                if (session) {
+                    const metaUserId = getCookie('meta_user_id');
+                    
+                    if (metaUserId) {
+                        // Update the meta_connection to link to this user
+                        await supabaseClient
+                            .from('meta_connections')
+                            .update({ user_id: session.user.id })
+                            .eq('meta_user_id', metaUserId);
+                    }
+                }
+
+                // Show success
+                if (accounts) {
+                    document.getElementById('accountCount').textContent = `Found ${accounts} ad account(s)`;
+                }
+                showState('success');
+                
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 2000);
+                return;
+            }
+
+            // Handle error
             if (error) {
-                console.error('OAuth error:', error, errorDescription);
-                showError(errorDescription || 'Authorization was denied or cancelled.');
+                showError(decodeURIComponent(error));
                 return;
             }
-            
-            // Validate required parameters
-            if (!code) {
-                showError('No authorization code received. Please try again.');
-                return;
-            }
-            
-            // SECURITY: Validate state parameter to prevent CSRF
-            if (!validateState(state)) {
-                console.error('State validation failed');
-                showError('Security validation failed. Please try connecting again.');
-                return;
-            }
-            
-            try {
-                // Get current user session
-                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-                
-                if (sessionError || !session) {
-                    showError('Session expired. Please log in again.');
-                    setTimeout(() => {
-                        window.location.href = '/dashboard.html';
-                    }, 2000);
-                    return;
-                }
-                
-                // Exchange code for token via Supabase Edge Function
-                // SECURITY: Token exchange happens server-side to protect client_secret
-                const response = await fetch(`${SUPABASE_URL}/functions/v1/meta-oauth-callback`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        code: code,
-                        redirect_uri: window.location.origin + '/auth-callback.html'
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || 'Failed to exchange authorization code');
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showState('success');
-                    
-                    // Clear URL parameters for security
-                    window.history.replaceState({}, document.title, '/auth-callback.html');
-                    
-                    // Redirect to dashboard
-                    setTimeout(() => {
-                        window.location.href = '/dashboard.html';
-                    }, 2000);
-                } else {
-                    throw new Error(result.error || 'Failed to connect account');
-                }
-                
-            } catch (err) {
-                console.error('Callback error:', err);
-                showError(err.message || 'An unexpected error occurred. Please try again.');
-            }
+
+            // No parameters - show error
+            showError('Invalid callback. Please try connecting again.');
         }
-        
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Clear URL from browser history immediately for security
-            if (window.location.search) {
-                handleCallback();
-            } else {
-                showError('Invalid callback. No parameters received.');
-            }
-        });
+
+        handleCallback();
     </script>
 </body>
 </html>
