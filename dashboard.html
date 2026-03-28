@@ -9,12 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
+        .nav-item.active { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
     </style>
 </head>
 <body class="bg-slate-900 min-h-screen">
     
     <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 h-full w-64 bg-slate-800 border-r border-slate-700 p-4">
+    <aside class="fixed left-0 top-0 h-full w-64 bg-slate-800 border-r border-slate-700 p-4 flex flex-col">
         <!-- Logo -->
         <div class="flex items-center gap-3 mb-8">
             <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -25,19 +26,19 @@
         
         <!-- Nav -->
         <nav class="space-y-1">
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+            <a href="#overview" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" data-section="overview">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                 </svg>
                 <span class="font-medium">Overview</span>
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors">
+            <a href="#alerts" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors" data-section="alerts">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                 </svg>
                 <span>Alerts</span>
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors">
+            <a href="#settings" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors" data-section="settings">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -47,7 +48,7 @@
         </nav>
         
         <!-- Connect Meta Button -->
-        <div class="mt-8 p-4 bg-slate-700/50 rounded-xl">
+        <div id="connectMetaBox" class="mt-8 p-4 bg-slate-700/50 rounded-xl hidden">
             <p class="text-sm text-slate-400 mb-3">Connect your ad accounts</p>
             <button id="connectMetaBtn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -56,103 +57,135 @@
                 Connect Meta
             </button>
         </div>
+
+        <!-- Connected Status -->
+        <div id="connectedStatus" class="mt-8 p-4 bg-green-500/10 border border-green-500/20 rounded-xl hidden">
+            <div class="flex items-center gap-2 text-green-400 text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Meta Connected</span>
+            </div>
+            <p class="text-slate-400 text-xs mt-1" id="accountsInfo">0 ad accounts</p>
+        </div>
+        
+        <!-- Spacer -->
+        <div class="flex-1"></div>
         
         <!-- User -->
-        <div class="absolute bottom-4 left-4 right-4">
-            <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
-                <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium" id="userAvatar">?</div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-white text-sm font-medium truncate" id="userName">Loading...</p>
-                    <p class="text-slate-400 text-xs truncate" id="userEmail">...</p>
-                </div>
-                <button id="logoutBtn" class="p-2 text-slate-400 hover:text-white transition-colors" title="Logout">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
-                </button>
+        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+            <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium" id="userAvatar">?</div>
+            <div class="flex-1 min-w-0">
+                <p class="text-white text-sm font-medium truncate" id="userName">Loading...</p>
+                <p class="text-slate-400 text-xs truncate" id="userEmail">...</p>
             </div>
+            <button id="logoutBtn" class="p-2 text-slate-400 hover:text-white transition-colors" title="Logout">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </button>
         </div>
     </aside>
     
     <!-- Main Content -->
     <main class="ml-64 p-8">
-        <!-- Header -->
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-white">Dashboard</h1>
-            <p class="text-slate-400">Monitor your ad spend across all accounts</p>
-        </div>
         
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <!-- Total Spend -->
-            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <span class="text-slate-400 text-sm">Total Spend Today</span>
-                </div>
-                <p class="text-2xl font-bold text-white">€0.00</p>
-                <p class="text-emerald-400 text-sm mt-1">Connect Meta to see data</p>
+        <!-- Overview Section -->
+        <section id="section-overview">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-white">Dashboard</h1>
+                <p class="text-slate-400">Monitor your ad spend across all accounts</p>
             </div>
             
-            <!-- Active Campaigns -->
-            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Total Spend -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-slate-400 text-sm">Total Spend Today</span>
+                    </div>
+                    <p class="text-2xl font-bold text-white" id="totalSpend">€0.00</p>
+                    <p class="text-slate-500 text-sm mt-1" id="spendStatus">Loading...</p>
+                </div>
+                
+                <!-- Active Campaigns -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-slate-400 text-sm">Active Campaigns</span>
+                    </div>
+                    <p class="text-2xl font-bold text-white" id="activeCampaigns">0</p>
+                    <p class="text-slate-500 text-sm mt-1">Across all accounts</p>
+                </div>
+                
+                <!-- Alerts -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-slate-400 text-sm">Active Alerts</span>
+                    </div>
+                    <p class="text-2xl font-bold text-white" id="activeAlerts">0</p>
+                    <p class="text-slate-500 text-sm mt-1">All clear</p>
+                </div>
+                
+                <!-- Connected Accounts -->
+                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-slate-400 text-sm">Ad Accounts</span>
+                    </div>
+                    <p class="text-2xl font-bold text-white" id="connectedAccounts">0</p>
+                    <p class="text-slate-500 text-sm mt-1" id="accountsStatus">Not connected</p>
+                </div>
+            </div>
+            
+            <!-- Ad Accounts List -->
+            <div id="adAccountsList" class="hidden">
+                <h3 class="text-lg font-semibold text-white mb-4">Your Ad Accounts</h3>
+                <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-slate-700/50">
+                            <tr>
+                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Account Name</th>
+                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Account ID</th>
+                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Currency</th>
+                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountsTableBody" class="divide-y divide-slate-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Getting Started (shown when not connected) -->
+            <div id="gettingStarted" class="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-8 border border-indigo-500/20">
+                <div class="flex items-start gap-6">
+                    <div class="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                     </div>
-                    <span class="text-slate-400 text-sm">Active Campaigns</span>
-                </div>
-                <p class="text-2xl font-bold text-white">0</p>
-                <p class="text-slate-500 text-sm mt-1">No campaigns yet</p>
-            </div>
-            
-            <!-- Alerts -->
-            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                        </svg>
-                    </div>
-                    <span class="text-slate-400 text-sm">Active Alerts</span>
-                </div>
-                <p class="text-2xl font-bold text-white">0</p>
-                <p class="text-slate-500 text-sm mt-1">All clear</p>
-            </div>
-            
-            <!-- Connected Accounts -->
-            <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </div>
-                    <span class="text-slate-400 text-sm">Ad Accounts</span>
-                </div>
-                <p class="text-2xl font-bold text-white">0</p>
-                <p class="text-slate-500 text-sm mt-1">Not connected</p>
-            </div>
-        </div>
-        
-        <!-- Getting Started -->
-        <div class="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-8 border border-indigo-500/20">
-            <div class="flex items-start gap-6">
-                <div class="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="text-xl font-bold text-white mb-2">Get Started with AdGuardian</h2>
-                    <p class="text-slate-400 mb-4">Connect your Meta Ads account to start monitoring your campaigns and receive alerts when budgets are at risk.</p>
-                    <div class="flex flex-wrap gap-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-white mb-2">Get Started with AdGuardian</h2>
+                        <p class="text-slate-400 mb-4">Connect your Meta Ads account to start monitoring your campaigns and receive alerts when budgets are at risk.</p>
                         <button id="connectMetaBtn2" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -162,18 +195,65 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Recent Activity -->
-        <div class="mt-8">
-            <h3 class="text-lg font-semibold text-white mb-4">Recent Activity</h3>
+        </section>
+
+        <!-- Alerts Section -->
+        <section id="section-alerts" class="hidden">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-white">Alerts</h1>
+                <p class="text-slate-400">Monitor budget alerts across your accounts</p>
+            </div>
+            
             <div class="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
                 <svg class="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                 </svg>
-                <p class="text-slate-400">No activity yet. Connect your ad accounts to get started.</p>
+                <p class="text-slate-400 mb-2">No alerts yet</p>
+                <p class="text-slate-500 text-sm">Alerts will appear here when your budgets need attention.</p>
             </div>
-        </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="section-settings" class="hidden">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-white">Settings</h1>
+                <p class="text-slate-400">Manage your notification preferences</p>
+            </div>
+            
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-2xl">
+                <h3 class="text-white font-semibold mb-4">Email Notifications</h3>
+                
+                <div class="space-y-4">
+                    <label class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white">Overspending Alerts</p>
+                            <p class="text-slate-400 text-sm">Get notified when spend exceeds budget</p>
+                        </div>
+                        <input type="checkbox" id="alertOverspending" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-500">
+                    </label>
+                    
+                    <label class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white">Underspending Alerts</p>
+                            <p class="text-slate-400 text-sm">Get notified when spend is below target</p>
+                        </div>
+                        <input type="checkbox" id="alertUnderspending" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-indigo-500 focus:ring-indigo-500">
+                    </label>
+                    
+                    <div class="pt-4 border-t border-slate-700">
+                        <label class="block">
+                            <p class="text-white mb-2">Notification Email</p>
+                            <input type="email" id="notificationEmail" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500" placeholder="your@email.com">
+                        </label>
+                    </div>
+                    
+                    <button id="saveSettings" class="mt-4 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script>
@@ -183,36 +263,194 @@
         const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impwcm52ZnRkZm5oc2ZldW94a2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTE3MTUsImV4cCI6MjA4ODk2NzcxNX0.YqJcKE-GJPCdo6nNly4FTOMHx_N0Bvj4-DIFcoU6-Hk';
         
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let metaConnection = null;
 
         // ============================================
-        // CHECK AUTH ON LOAD
+        // NAVIGATION
+        // ============================================
+        function showSection(sectionName) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('section-' + sectionName).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active', 'bg-indigo-500/20', 'text-indigo-400');
+                item.classList.add('text-slate-400');
+            });
+            const activeNav = document.querySelector(`[data-section="${sectionName}"]`);
+            if (activeNav) {
+                activeNav.classList.add('active');
+                activeNav.classList.remove('text-slate-400');
+            }
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.dataset.section;
+                showSection(section);
+                window.location.hash = section;
+            });
+        });
+
+        if (window.location.hash) {
+            const section = window.location.hash.replace('#', '');
+            if (['overview', 'alerts', 'settings'].includes(section)) {
+                showSection(section);
+            }
+        }
+
+        // ============================================
+        // INIT
         // ============================================
         async function init() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
                 window.location.href = '/login';
                 return;
             }
             
-            // Update user info
-            const user = session.user;
-            const email = user.email || 'Unknown';
-            const name = user.user_metadata?.name || email.split('@')[0];
+            currentUser = session.user;
+            
+            const email = currentUser.email || 'Unknown';
+            const name = currentUser.user_metadata?.name || email.split('@')[0];
             
             document.getElementById('userName').textContent = name;
             document.getElementById('userEmail').textContent = email;
             document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+            document.getElementById('notificationEmail').value = email;
+            
+            await loadMetaConnection();
+            await loadNotificationSettings();
         }
-        
-        init();
+
+        // ============================================
+        // LOAD META CONNECTION
+        // ============================================
+        async function loadMetaConnection() {
+            const { data, error } = await supabase
+                .from('meta_connections')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .single();
+            
+            if (error || !data) {
+                document.getElementById('connectMetaBox').classList.remove('hidden');
+                document.getElementById('connectedStatus').classList.add('hidden');
+                document.getElementById('gettingStarted').classList.remove('hidden');
+                document.getElementById('adAccountsList').classList.add('hidden');
+                document.getElementById('spendStatus').textContent = 'Connect Meta to see data';
+                document.getElementById('accountsStatus').textContent = 'Not connected';
+                return;
+            }
+            
+            metaConnection = data;
+            const accounts = data.ad_accounts || [];
+            
+            document.getElementById('connectMetaBox').classList.add('hidden');
+            document.getElementById('connectedStatus').classList.remove('hidden');
+            document.getElementById('gettingStarted').classList.add('hidden');
+            document.getElementById('adAccountsList').classList.remove('hidden');
+            
+            document.getElementById('accountsInfo').textContent = `${accounts.length} ad accounts`;
+            document.getElementById('connectedAccounts').textContent = accounts.length;
+            document.getElementById('accountsStatus').textContent = 'Connected';
+            document.getElementById('spendStatus').textContent = 'Data available';
+            
+            renderAccountsTable(accounts);
+        }
+
+        // ============================================
+        // RENDER ACCOUNTS TABLE
+        // ============================================
+        function renderAccountsTable(accounts) {
+            const tbody = document.getElementById('accountsTableBody');
+            tbody.innerHTML = '';
+            
+            accounts.forEach(account => {
+                const statusColors = {
+                    1: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Active' },
+                    2: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Disabled' },
+                    3: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Unsettled' },
+                    101: { bg: 'bg-slate-500/20', text: 'text-slate-400', label: 'Closed' }
+                };
+                const status = statusColors[account.account_status] || statusColors[1];
+                
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-700/30 transition-colors';
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-white">${account.name || 'Unnamed'}</td>
+                    <td class="px-4 py-3 text-slate-400 font-mono text-sm">${account.account_id || account.id}</td>
+                    <td class="px-4 py-3 text-slate-400">${account.currency || 'USD'}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}">
+                            ${status.label}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // ============================================
+        // LOAD NOTIFICATION SETTINGS
+        // ============================================
+        async function loadNotificationSettings() {
+            const { data } = await supabase
+                .from('notification_settings')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .single();
+            
+            if (data) {
+                document.getElementById('alertOverspending').checked = data.alert_overspending !== false;
+                document.getElementById('alertUnderspending').checked = data.alert_underspending !== false;
+                if (data.email) {
+                    document.getElementById('notificationEmail').value = data.email;
+                }
+            }
+        }
+
+        // ============================================
+        // SAVE SETTINGS
+        // ============================================
+        document.getElementById('saveSettings').addEventListener('click', async () => {
+            const btn = document.getElementById('saveSettings');
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+            
+            const settings = {
+                user_id: currentUser.id,
+                email: document.getElementById('notificationEmail').value,
+                alert_overspending: document.getElementById('alertOverspending').checked,
+                alert_underspending: document.getElementById('alertUnderspending').checked,
+                updated_at: new Date().toISOString()
+            };
+            
+            const { error } = await supabase
+                .from('notification_settings')
+                .upsert(settings, { onConflict: 'user_id' });
+            
+            if (error) {
+                alert('Failed to save settings');
+            } else {
+                btn.textContent = 'Saved!';
+                setTimeout(() => {
+                    btn.textContent = 'Save Settings';
+                }, 2000);
+            }
+            
+            btn.disabled = false;
+        });
 
         // ============================================
         // LOGOUT
         // ============================================
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
+            await supabase.auth.signOut();
             window.location.href = '/login';
         });
 
@@ -231,6 +469,11 @@
         
         document.getElementById('connectMetaBtn').addEventListener('click', connectMeta);
         document.getElementById('connectMetaBtn2').addEventListener('click', connectMeta);
+
+        // ============================================
+        // START
+        // ============================================
+        init();
     </script>
 </body>
 </html>
