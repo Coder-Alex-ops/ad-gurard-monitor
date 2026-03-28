@@ -474,12 +474,12 @@
         });
 
         document.getElementById('loadCampaignsBtn').addEventListener('click', async function() {
-            if (!selectedAccount || !metaConnection) return;
+            if (!selectedAccount || !currentUser) return;
             var btn = this; btn.disabled = true; btn.textContent = 'Loading...';
             document.getElementById('campaignsLoading').classList.remove('hidden');
             document.getElementById('noCampaigns').classList.add('hidden');
             try {
-                var response = await fetch('/api/meta?action=campaigns&account_id=' + selectedAccount.account_id);
+                var response = await fetch('/api/meta?action=campaigns&account_id=' + selectedAccount.account_id + '&user_id=' + currentUser.id);
                 var data = await response.json();
                 if (data.error) { alert('Error: ' + data.error); }
                 else { loadedCampaigns[selectedAccount.account_id] = data.campaigns || []; renderCampaignsList(); }
