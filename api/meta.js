@@ -1,5 +1,6 @@
 // Vercel Serverless Function: Combined Meta API Handler
-// Uses Supabase for auth and meta_connections (NO Redis)
+// Uses Supabase for meta_connections (NO Redis)
+// Accepts user_id as query param for simpler frontend integration
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -17,29 +18,19 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { action, account_id } = req.query;
+  const { action, account_id, user_id } = req.query;
 
   try {
-    // Get user from Authorization header (Bearer token from Supabase)
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing authorization header' });
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Verify the JWT and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
+    // Need user_id to get their Meta connection
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
     // Get Meta access token from meta_connections
     const { data: connection, error: connError } = await supabase
       .from('meta_connections')
       .select('access_token, token_expires_at')
-      .eq('user_id', user.id)
+      .eq('user_id', user_id)
       .single();
     
     if (connError || !connection) {
