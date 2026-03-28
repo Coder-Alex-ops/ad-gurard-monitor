@@ -24,11 +24,11 @@
         </div>
         
         <nav class="space-y-1">
-            <a href="#overview" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" data-section="overview">
+            <a href="#accounts" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" data-section="accounts">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                 </svg>
-                <span class="font-medium">Overview</span>
+                <span class="font-medium">Ad Accounts</span>
             </a>
             <a href="#alerts" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors" data-section="alerts">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,84 +83,18 @@
     
     <main class="ml-64 p-8">
         
-        <section id="section-overview">
+        <!-- Ad Accounts Section -->
+        <section id="section-accounts">
             <div class="mb-8">
-                <h1 class="text-2xl font-bold text-white">Dashboard</h1>
-                <p class="text-slate-400">Monitor your ad spend across all accounts</p>
+                <h1 class="text-2xl font-bold text-white">Ad Accounts</h1>
+                <p class="text-slate-400">Select an account to configure budget alerts</p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <span class="text-slate-400 text-sm">Total Spend Today</span>
-                    </div>
-                    <p class="text-2xl font-bold text-white" id="totalSpend">€0.00</p>
-                    <p class="text-slate-500 text-sm mt-1" id="spendStatus">Loading...</p>
-                </div>
-                
-                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <span class="text-slate-400 text-sm">Active Campaigns</span>
-                    </div>
-                    <p class="text-2xl font-bold text-white" id="activeCampaigns">0</p>
-                    <p class="text-slate-500 text-sm mt-1">Across all accounts</p>
-                </div>
-                
-                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                        </div>
-                        <span class="text-slate-400 text-sm">Active Alerts</span>
-                    </div>
-                    <p class="text-2xl font-bold text-white" id="activeAlerts">0</p>
-                    <p class="text-slate-500 text-sm mt-1">All clear</p>
-                </div>
-                
-                <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                        </div>
-                        <span class="text-slate-400 text-sm">Ad Accounts</span>
-                    </div>
-                    <p class="text-2xl font-bold text-white" id="connectedAccounts">0</p>
-                    <p class="text-slate-500 text-sm mt-1" id="accountsStatus">Not connected</p>
-                </div>
-            </div>
-            
-            <div id="adAccountsList" class="hidden mb-8">
-                <h3 class="text-lg font-semibold text-white mb-4">Your Ad Accounts</h3>
-                <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <table class="w-full">
-                        <thead class="bg-slate-700/50">
-                            <tr>
-                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Account Name</th>
-                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Account ID</th>
-                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Currency</th>
-                                <th class="text-left text-slate-400 text-sm font-medium px-4 py-3">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accountsTableBody" class="divide-y divide-slate-700"></tbody>
-                    </table>
-                </div>
+            <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Accounts will be rendered here -->
             </div>
 
-            <div id="gettingStarted" class="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-8 border border-indigo-500/20">
+            <div id="gettingStarted" class="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-8 border border-indigo-500/20 hidden">
                 <div class="flex items-start gap-6">
                     <div class="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                         <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,20 +115,119 @@
             </div>
         </section>
 
-        <section id="section-alerts" class="hidden">
+        <!-- Account Detail Section (hidden by default) -->
+        <section id="section-account-detail" class="hidden">
             <div class="mb-8">
-                <h1 class="text-2xl font-bold text-white">Alerts</h1>
-                <p class="text-slate-400">Monitor budget alerts across your accounts</p>
+                <button id="backToAccounts" class="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Accounts
+                </button>
+                <h1 class="text-2xl font-bold text-white" id="accountDetailName">Account Name</h1>
+                <p class="text-slate-400" id="accountDetailId">Account ID</p>
             </div>
-            <div class="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center">
-                <svg class="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <p class="text-slate-400 mb-2">No alerts yet</p>
-                <p class="text-slate-500 text-sm">Alerts will appear here when your budgets need attention.</p>
+            
+            <!-- Budget Alert Configuration -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-2xl">
+                <h3 class="text-white font-semibold mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    Budget Alert Settings
+                </h3>
+                
+                <div class="space-y-6">
+                    <!-- Enable Alerts -->
+                    <label class="flex items-center justify-between">
+                        <div>
+                            <p class="text-white">Enable Alerts</p>
+                            <p class="text-slate-400 text-sm">Receive email alerts for this account</p>
+                        </div>
+                        <input type="checkbox" id="alertsEnabled" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-indigo-500">
+                    </label>
+
+                    <!-- Monthly Budget -->
+                    <div>
+                        <label class="block">
+                            <p class="text-white mb-2">Monthly Budget</p>
+                            <div class="flex gap-2">
+                                <span class="flex items-center px-3 bg-slate-700 border border-slate-600 rounded-l-lg text-slate-400">€</span>
+                                <input type="number" id="monthlyBudget" class="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-r-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500" placeholder="5000">
+                            </div>
+                            <p class="text-slate-500 text-sm mt-1">The total budget for this account per month</p>
+                        </label>
+                    </div>
+
+                    <!-- Period -->
+                    <div>
+                        <label class="block">
+                            <p class="text-white mb-2">Budget Period</p>
+                            <div class="flex gap-2">
+                                <input type="date" id="periodStart" class="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+                                <span class="flex items-center text-slate-400">to</span>
+                                <input type="date" id="periodEnd" class="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Overspend Threshold -->
+                    <div>
+                        <label class="block">
+                            <p class="text-white mb-2">Overspend Alert Threshold</p>
+                            <div class="flex items-center gap-4">
+                                <input type="range" id="overspendThreshold" min="100" max="200" value="120" class="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-white font-medium w-16 text-right" id="overspendValue">120%</span>
+                            </div>
+                            <p class="text-slate-500 text-sm mt-1">Alert when spending exceeds this % of expected pace</p>
+                        </label>
+                    </div>
+
+                    <!-- Underspend Threshold -->
+                    <div>
+                        <label class="block">
+                            <p class="text-white mb-2">Underspend Alert Threshold</p>
+                            <div class="flex items-center gap-4">
+                                <input type="range" id="underspendThreshold" min="0" max="100" value="50" class="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-white font-medium w-16 text-right" id="underspendValue">50%</span>
+                            </div>
+                            <p class="text-slate-500 text-sm mt-1">Alert when spending is below this % of expected pace</p>
+                        </label>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-700 flex gap-3">
+                        <button id="saveAccountSettings" class="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
+                            Save Settings
+                        </button>
+                        <button id="deleteAccountSettings" class="px-5 py-2.5 bg-slate-700 hover:bg-red-500/20 hover:text-red-400 text-slate-400 font-medium rounded-lg transition-colors">
+                            Remove Alert
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
+        <!-- Alerts Section -->
+        <section id="section-alerts" class="hidden">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-white">Active Alerts</h1>
+                <p class="text-slate-400">Accounts with budget monitoring enabled</p>
+            </div>
+            
+            <div id="alertsList" class="space-y-4">
+                <!-- Alerts will be rendered here -->
+            </div>
+            
+            <div id="noAlerts" class="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center hidden">
+                <svg class="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                <p class="text-slate-400 mb-2">No alerts configured</p>
+                <p class="text-slate-500 text-sm">Select an ad account to set up budget alerts.</p>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
         <section id="section-settings" class="hidden">
             <div class="mb-8">
                 <h1 class="text-2xl font-bold text-white">Settings</h1>
@@ -232,31 +265,34 @@
     </main>
 
     <script>
-        const SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impwcm52ZnRkZm5oc2ZldW94a2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTE3MTUsImV4cCI6MjA4ODk2NzcxNX0.YqJcKE-GJPCdo6nNly4FTOMHx_N0Bvj4-DIFcoU6-Hk';
+        var SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
+        var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impwcm52ZnRkZm5oc2ZldW94a2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTE3MTUsImV4cCI6MjA4ODk2NzcxNX0.YqJcKE-GJPCdo6nNly4FTOMHx_N0Bvj4-DIFcoU6-Hk';
         
-        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let currentUser = null;
+        var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        var currentUser = null;
+        var metaConnection = null;
+        var adAccounts = [];
+        var accountBudgets = [];
+        var selectedAccount = null;
 
         // Navigation
         function showSection(name) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            const section = document.getElementById('section-' + name);
+            document.querySelectorAll('main > section').forEach(function(s) { s.classList.add('hidden'); });
+            var section = document.getElementById('section-' + name);
             if (section) section.classList.remove('hidden');
             
-            document.querySelectorAll('.nav-item').forEach(item => {
+            document.querySelectorAll('.nav-item').forEach(function(item) {
                 item.classList.remove('active');
                 item.classList.add('text-slate-400');
             });
-            const nav = document.querySelector('[data-section="' + name + '"]');
+            var nav = document.querySelector('[data-section="' + name + '"]');
             if (nav) {
                 nav.classList.add('active');
                 nav.classList.remove('text-slate-400');
             }
         }
 
-        document.querySelectorAll('.nav-item').forEach(item => {
+        document.querySelectorAll('.nav-item').forEach(function(item) {
             item.addEventListener('click', function(e) {
                 e.preventDefault();
                 showSection(this.dataset.section);
@@ -264,16 +300,18 @@
             });
         });
 
-        if (window.location.hash) {
-            const section = window.location.hash.replace('#', '');
-            if (['overview', 'alerts', 'settings'].includes(section)) {
-                showSection(section);
-            }
-        }
+        // Threshold sliders
+        document.getElementById('overspendThreshold').addEventListener('input', function() {
+            document.getElementById('overspendValue').textContent = this.value + '%';
+        });
+        document.getElementById('underspendThreshold').addEventListener('input', function() {
+            document.getElementById('underspendValue').textContent = this.value + '%';
+        });
 
         // Init
         async function init() {
-            const { data: { session } } = await db.auth.getSession();
+            var sessionData = await db.auth.getSession();
+            var session = sessionData.data.session;
             
             if (!session) {
                 window.location.href = '/login';
@@ -282,8 +320,8 @@
             
             currentUser = session.user;
             
-            const email = currentUser.email || 'Unknown';
-            const name = currentUser.user_metadata?.name || email.split('@')[0];
+            var email = currentUser.email || 'Unknown';
+            var name = currentUser.user_metadata && currentUser.user_metadata.name ? currentUser.user_metadata.name : email.split('@')[0];
             
             document.getElementById('userName').textContent = name;
             document.getElementById('userEmail').textContent = email;
@@ -291,90 +329,232 @@
             document.getElementById('notificationEmail').value = email;
             
             await loadMetaConnection();
+            await loadAccountBudgets();
             await loadNotificationSettings();
+            
+            if (window.location.hash) {
+                var section = window.location.hash.replace('#', '');
+                if (['accounts', 'alerts', 'settings'].indexOf(section) !== -1) {
+                    showSection(section);
+                }
+            }
         }
 
         // Load Meta Connection
         async function loadMetaConnection() {
-            const { data, error } = await db
-                .from('meta_connections')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .single();
+            var result = await db.from('meta_connections').select('*').eq('user_id', currentUser.id).single();
             
-            if (error || !data) {
+            if (result.error || !result.data) {
                 document.getElementById('connectMetaBox').classList.remove('hidden');
                 document.getElementById('connectedStatus').classList.add('hidden');
                 document.getElementById('gettingStarted').classList.remove('hidden');
-                document.getElementById('adAccountsList').classList.add('hidden');
-                document.getElementById('spendStatus').textContent = 'Connect Meta to see data';
-                document.getElementById('accountsStatus').textContent = 'Not connected';
+                document.getElementById('accountsGrid').classList.add('hidden');
                 return;
             }
             
-            const accounts = data.ad_accounts || [];
+            metaConnection = result.data;
+            adAccounts = result.data.ad_accounts || [];
             
             document.getElementById('connectMetaBox').classList.add('hidden');
             document.getElementById('connectedStatus').classList.remove('hidden');
             document.getElementById('gettingStarted').classList.add('hidden');
-            document.getElementById('adAccountsList').classList.remove('hidden');
+            document.getElementById('accountsGrid').classList.remove('hidden');
             
-            document.getElementById('accountsInfo').textContent = accounts.length + ' ad accounts';
-            document.getElementById('connectedAccounts').textContent = accounts.length;
-            document.getElementById('accountsStatus').textContent = 'Connected';
-            document.getElementById('spendStatus').textContent = 'Data available';
+            document.getElementById('accountsInfo').textContent = adAccounts.length + ' ad accounts';
             
-            renderAccountsTable(accounts);
+            renderAccountsGrid();
         }
 
-        // Render Accounts Table
-        function renderAccountsTable(accounts) {
-            const tbody = document.getElementById('accountsTableBody');
-            tbody.innerHTML = '';
+        // Load Account Budgets
+        async function loadAccountBudgets() {
+            var result = await db.from('account_budgets').select('*').eq('user_id', currentUser.id);
+            accountBudgets = result.data || [];
+            renderAlertsList();
+        }
+
+        // Render Accounts Grid
+        function renderAccountsGrid() {
+            var grid = document.getElementById('accountsGrid');
+            grid.innerHTML = '';
             
-            accounts.forEach(function(account) {
-                const statusMap = {
-                    1: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Active' },
-                    2: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Disabled' },
-                    3: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Unsettled' },
-                    101: { bg: 'bg-slate-500/20', text: 'text-slate-400', label: 'Closed' }
-                };
-                const status = statusMap[account.account_status] || statusMap[1];
+            adAccounts.forEach(function(account) {
+                var budget = accountBudgets.find(function(b) { return b.ad_account_id === account.account_id; });
+                var hasAlert = budget && budget.alerts_enabled;
                 
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-slate-700/30 transition-colors';
-                row.innerHTML = '<td class="px-4 py-3 text-white">' + (account.name || 'Unnamed') + '</td>' +
-                    '<td class="px-4 py-3 text-slate-400 font-mono text-sm">' + (account.account_id || account.id) + '</td>' +
-                    '<td class="px-4 py-3 text-slate-400">' + (account.currency || 'USD') + '</td>' +
-                    '<td class="px-4 py-3"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + status.bg + ' ' + status.text + '">' + status.label + '</span></td>';
-                tbody.appendChild(row);
+                var statusMap = {
+                    1: { color: 'green', label: 'Active' },
+                    2: { color: 'red', label: 'Disabled' },
+                    3: { color: 'yellow', label: 'Unsettled' }
+                };
+                var status = statusMap[account.account_status] || statusMap[1];
+                
+                var card = document.createElement('div');
+                card.className = 'bg-slate-800 rounded-xl border border-slate-700 p-5 hover:border-indigo-500/50 cursor-pointer transition-all';
+                card.innerHTML = 
+                    '<div class="flex items-start justify-between mb-3">' +
+                        '<div class="flex-1 min-w-0">' +
+                            '<h3 class="text-white font-medium truncate">' + (account.name || 'Unnamed') + '</h3>' +
+                            '<p class="text-slate-400 text-sm font-mono">' + (account.account_id || account.id) + '</p>' +
+                        '</div>' +
+                        (hasAlert ? '<span class="flex-shrink-0 ml-2 px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">Alert On</span>' : '') +
+                    '</div>' +
+                    '<div class="flex items-center justify-between">' +
+                        '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-' + status.color + '-500/20 text-' + status.color + '-400">' + status.label + '</span>' +
+                        '<span class="text-slate-400 text-sm">' + (account.currency || 'USD') + '</span>' +
+                    '</div>' +
+                    (budget ? '<div class="mt-3 pt-3 border-t border-slate-700"><p class="text-slate-400 text-sm">Budget: <span class="text-white">€' + (budget.monthly_budget || 0) + '</span></p></div>' : '');
+                
+                card.addEventListener('click', function() {
+                    openAccountDetail(account);
+                });
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Open Account Detail
+        function openAccountDetail(account) {
+            selectedAccount = account;
+            
+            document.getElementById('accountDetailName').textContent = account.name || 'Unnamed Account';
+            document.getElementById('accountDetailId').textContent = 'ID: ' + (account.account_id || account.id);
+            
+            // Load existing budget settings
+            var budget = accountBudgets.find(function(b) { return b.ad_account_id === account.account_id; });
+            
+            if (budget) {
+                document.getElementById('alertsEnabled').checked = budget.alerts_enabled !== false;
+                document.getElementById('monthlyBudget').value = budget.monthly_budget || '';
+                document.getElementById('periodStart').value = budget.period_start || '';
+                document.getElementById('periodEnd').value = budget.period_end || '';
+                document.getElementById('overspendThreshold').value = budget.alert_overspend_threshold || 120;
+                document.getElementById('underspendThreshold').value = budget.alert_underspend_threshold || 50;
+            } else {
+                document.getElementById('alertsEnabled').checked = true;
+                document.getElementById('monthlyBudget').value = '';
+                document.getElementById('periodStart').value = '';
+                document.getElementById('periodEnd').value = '';
+                document.getElementById('overspendThreshold').value = 120;
+                document.getElementById('underspendThreshold').value = 50;
+            }
+            
+            document.getElementById('overspendValue').textContent = document.getElementById('overspendThreshold').value + '%';
+            document.getElementById('underspendValue').textContent = document.getElementById('underspendThreshold').value + '%';
+            
+            document.getElementById('section-accounts').classList.add('hidden');
+            document.getElementById('section-account-detail').classList.remove('hidden');
+        }
+
+        // Back to Accounts
+        document.getElementById('backToAccounts').addEventListener('click', function() {
+            document.getElementById('section-account-detail').classList.add('hidden');
+            document.getElementById('section-accounts').classList.remove('hidden');
+            selectedAccount = null;
+        });
+
+        // Save Account Settings
+        document.getElementById('saveAccountSettings').addEventListener('click', async function() {
+            if (!selectedAccount) return;
+            
+            var btn = this;
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+            
+            var budgetData = {
+                user_id: currentUser.id,
+                ad_account_id: selectedAccount.account_id,
+                ad_account_name: selectedAccount.name || 'Unnamed',
+                monthly_budget: parseFloat(document.getElementById('monthlyBudget').value) || 0,
+                period_start: document.getElementById('periodStart').value || null,
+                period_end: document.getElementById('periodEnd').value || null,
+                alert_overspend_threshold: parseInt(document.getElementById('overspendThreshold').value),
+                alert_underspend_threshold: parseInt(document.getElementById('underspendThreshold').value),
+                alerts_enabled: document.getElementById('alertsEnabled').checked,
+                updated_at: new Date().toISOString()
+            };
+            
+            var result = await db.from('account_budgets').upsert(budgetData, { onConflict: 'user_id,ad_account_id' });
+            
+            if (result.error) {
+                alert('Failed to save: ' + result.error.message);
+            } else {
+                btn.textContent = 'Saved!';
+                await loadAccountBudgets();
+                renderAccountsGrid();
+                setTimeout(function() { btn.textContent = 'Save Settings'; }, 2000);
+            }
+            btn.disabled = false;
+        });
+
+        // Delete Account Settings
+        document.getElementById('deleteAccountSettings').addEventListener('click', async function() {
+            if (!selectedAccount) return;
+            if (!confirm('Remove budget alert for this account?')) return;
+            
+            await db.from('account_budgets').delete().eq('user_id', currentUser.id).eq('ad_account_id', selectedAccount.account_id);
+            
+            await loadAccountBudgets();
+            renderAccountsGrid();
+            
+            document.getElementById('section-account-detail').classList.add('hidden');
+            document.getElementById('section-accounts').classList.remove('hidden');
+        });
+
+        // Render Alerts List
+        function renderAlertsList() {
+            var list = document.getElementById('alertsList');
+            var noAlerts = document.getElementById('noAlerts');
+            
+            var enabledBudgets = accountBudgets.filter(function(b) { return b.alerts_enabled; });
+            
+            if (enabledBudgets.length === 0) {
+                list.classList.add('hidden');
+                noAlerts.classList.remove('hidden');
+                return;
+            }
+            
+            list.classList.remove('hidden');
+            noAlerts.classList.add('hidden');
+            list.innerHTML = '';
+            
+            enabledBudgets.forEach(function(budget) {
+                var card = document.createElement('div');
+                card.className = 'bg-slate-800 rounded-xl border border-slate-700 p-5';
+                card.innerHTML = 
+                    '<div class="flex items-center justify-between">' +
+                        '<div>' +
+                            '<h3 class="text-white font-medium">' + (budget.ad_account_name || 'Unnamed') + '</h3>' +
+                            '<p class="text-slate-400 text-sm">Budget: €' + (budget.monthly_budget || 0) + '/month</p>' +
+                        '</div>' +
+                        '<div class="text-right">' +
+                            '<p class="text-amber-400 text-sm">Overspend: >' + budget.alert_overspend_threshold + '%</p>' +
+                            '<p class="text-blue-400 text-sm">Underspend: <' + budget.alert_underspend_threshold + '%</p>' +
+                        '</div>' +
+                    '</div>';
+                list.appendChild(card);
             });
         }
 
         // Load Notification Settings
         async function loadNotificationSettings() {
-            const { data } = await db
-                .from('notification_settings')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .single();
+            var result = await db.from('notification_settings').select('*').eq('user_id', currentUser.id).single();
             
-            if (data) {
-                document.getElementById('alertOverspending').checked = data.alert_overspending !== false;
-                document.getElementById('alertUnderspending').checked = data.alert_underspending !== false;
-                if (data.email) {
-                    document.getElementById('notificationEmail').value = data.email;
+            if (result.data) {
+                document.getElementById('alertOverspending').checked = result.data.alert_overspending !== false;
+                document.getElementById('alertUnderspending').checked = result.data.alert_underspending !== false;
+                if (result.data.email) {
+                    document.getElementById('notificationEmail').value = result.data.email;
                 }
             }
         }
 
         // Save Settings
         document.getElementById('saveSettings').addEventListener('click', async function() {
-            const btn = this;
+            var btn = this;
             btn.textContent = 'Saving...';
             btn.disabled = true;
             
-            const settings = {
+            var settings = {
                 user_id: currentUser.id,
                 email: document.getElementById('notificationEmail').value,
                 alert_overspending: document.getElementById('alertOverspending').checked,
@@ -382,11 +562,9 @@
                 updated_at: new Date().toISOString()
             };
             
-            const { error } = await db
-                .from('notification_settings')
-                .upsert(settings, { onConflict: 'user_id' });
+            var result = await db.from('notification_settings').upsert(settings, { onConflict: 'user_id' });
             
-            if (error) {
+            if (result.error) {
                 alert('Failed to save settings');
             } else {
                 btn.textContent = 'Saved!';
