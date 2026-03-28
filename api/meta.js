@@ -1,61 +1,64 @@
 // Vercel Serverless Function: Combined Meta API Handler
-// Works with existing Redis (Upstash) session system
-// Provides: Top Ads, Forecaster, Campaigns data
+// Uses Supabase for auth and meta_connections (NO Redis)
 
-import { createClient } from 'redis';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'https://jprnvftdfnhsfeuoxkkh.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  const { action } = req.query;
+  const { action, account_id } = req.query;
 
   try {
-    // Get session from cookie (same as your existing auth)
-    const cookies = parseCookies(req.headers.cookie || '');
-    const sessionId = cookies.session;
-
-    if (!sessionId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    // Get user from Authorization header (Bearer token from Supabase)
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing authorization header' });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // Get session from Redis
-    const redis = createClient({
-      url: process.env.ad_monitor_kv_REDIS_URL
-    });
-    await redis.connect();
-
-    const sessionData = await redis.get(`session:${sessionId}`);
-    await redis.disconnect();
-
-    if (!sessionData) {
-      return res.status(401).json({ error: 'Session expired' });
+    // Get Meta access token from meta_connections
+    const { data: connection, error: connError } = await supabase
+      .from('meta_connections')
+      .select('access_token, token_expires_at')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (connError || !connection) {
+      return res.status(401).json({ error: 'Meta not connected. Please connect your Meta account.' });
     }
 
-    const session = JSON.parse(sessionData);
-    const accessToken = session.accessToken;
-
-    if (!accessToken) {
-      return res.status(401).json({ error: 'No access token' });
+    // Check if token expired
+    if (connection.token_expires_at && new Date(connection.token_expires_at) < new Date()) {
+      return res.status(401).json({ error: 'Meta token expired. Please reconnect.' });
     }
 
-    // Check if token is expired
-    if (session.expiresAt && session.expiresAt < Date.now()) {
-      return res.status(401).json({ error: 'Token expired' });
-    }
+    const accessToken = connection.access_token;
 
-    // Route to appropriate handler
+    // Route to handler
     switch (action) {
       case 'accounts':
         return await handleAccounts(req, res, accessToken);
       case 'campaigns':
-        return await handleCampaigns(req, res, accessToken);
+        return await handleCampaigns(req, res, accessToken, account_id);
       case 'top-ads':
         return await handleTopAds(req, res, accessToken);
       case 'forecaster':
@@ -69,7 +72,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Meta API error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
 
@@ -77,12 +80,9 @@ export default async function handler(req, res) {
 // ACCOUNTS - Get ad accounts from Meta
 // ============================================
 async function handleAccounts(req, res, accessToken) {
-  const fields = [
-    'id', 'name', 'account_id', 'account_status', 'currency',
-    'timezone_name', 'spend_cap', 'amount_spent', 'balance'
-  ].join(',');
-
+  const fields = 'id,name,account_id,account_status,currency,timezone_name,spend_cap,amount_spent,balance';
   const url = `https://graph.facebook.com/v21.0/me/adaccounts?fields=${fields}&access_token=${accessToken}`;
+  
   const response = await fetch(url);
   const data = await response.json();
 
@@ -94,6 +94,7 @@ async function handleAccounts(req, res, accessToken) {
     id: account.account_id,
     account_id: account.account_id,
     name: account.name,
+    account_status: account.account_status,
     status: getAccountStatus(account.account_status),
     currency: account.currency,
     timezone: account.timezone_name,
@@ -101,21 +102,22 @@ async function handleAccounts(req, res, accessToken) {
     amount_spent: account.amount_spent ? parseFloat(account.amount_spent) / 100 : 0
   }));
 
-  return res.status(200).json({ success: true, data: accounts });
+  return res.status(200).json({ success: true, accounts });
 }
 
 // ============================================
-// CAMPAIGNS - Get campaigns and budgets
+// CAMPAIGNS - Get campaigns for an account
 // ============================================
-async function handleCampaigns(req, res, accessToken) {
-  const { ad_account_id } = req.query;
-  
-  if (!ad_account_id) {
-    return res.status(400).json({ error: 'ad_account_id is required' });
+async function handleCampaigns(req, res, accessToken, accountId) {
+  if (!accountId) {
+    return res.status(400).json({ error: 'account_id is required' });
   }
 
-  const fields = 'id,name,status,objective,daily_budget,lifetime_budget,budget_remaining';
-  const url = `https://graph.facebook.com/v21.0/act_${ad_account_id}/campaigns?fields=${fields}&limit=100&access_token=${accessToken}`;
+  // Remove 'act_' prefix if present
+  const cleanId = accountId.replace('act_', '');
+  
+  const fields = 'id,name,status,objective,daily_budget,lifetime_budget,budget_remaining,effective_status';
+  const url = `https://graph.facebook.com/v21.0/act_${cleanId}/campaigns?fields=${fields}&limit=100&access_token=${accessToken}`;
   
   const response = await fetch(url);
   const data = await response.json();
@@ -124,52 +126,18 @@ async function handleCampaigns(req, res, accessToken) {
     return res.status(400).json({ error: data.error.message });
   }
 
-  const campaigns = await Promise.all(
-    (data.data || []).map(async (campaign) => {
-      let todaySpend = 0;
-      let monthSpend = 0;
-      
-      try {
-        const todayUrl = `https://graph.facebook.com/v21.0/${campaign.id}/insights?fields=spend&date_preset=today&access_token=${accessToken}`;
-        const todayRes = await fetch(todayUrl);
-        const todayData = await todayRes.json();
-        todaySpend = parseFloat(todayData.data?.[0]?.spend || 0);
+  const campaigns = (data.data || []).map(campaign => ({
+    id: campaign.id,
+    name: campaign.name,
+    status: campaign.status,
+    effective_status: campaign.effective_status,
+    objective: campaign.objective,
+    daily_budget: campaign.daily_budget ? parseFloat(campaign.daily_budget) / 100 : null,
+    lifetime_budget: campaign.lifetime_budget ? parseFloat(campaign.lifetime_budget) / 100 : null,
+    budget_remaining: campaign.budget_remaining ? parseFloat(campaign.budget_remaining) / 100 : null
+  }));
 
-        const monthUrl = `https://graph.facebook.com/v21.0/${campaign.id}/insights?fields=spend&date_preset=this_month&access_token=${accessToken}`;
-        const monthRes = await fetch(monthUrl);
-        const monthData = await monthRes.json();
-        monthSpend = parseFloat(monthData.data?.[0]?.spend || 0);
-      } catch (e) {}
-
-      const dailyBudget = campaign.daily_budget ? parseFloat(campaign.daily_budget) / 100 : null;
-      let pacing = null;
-      let pacingStatus = 'ON_TRACK';
-      
-      if (dailyBudget && todaySpend > 0) {
-        const now = new Date();
-        const hoursElapsed = now.getHours() + (now.getMinutes() / 60);
-        const expectedSpend = dailyBudget * (hoursElapsed / 24);
-        pacing = (todaySpend / expectedSpend) * 100;
-        if (pacing > 120) pacingStatus = 'OVERSPENDING';
-        else if (pacing < 80) pacingStatus = 'UNDERSPENDING';
-      }
-
-      return {
-        id: campaign.id,
-        name: campaign.name,
-        status: campaign.status,
-        objective: campaign.objective,
-        daily_budget: dailyBudget,
-        lifetime_budget: campaign.lifetime_budget ? parseFloat(campaign.lifetime_budget) / 100 : null,
-        today_spend: todaySpend,
-        month_spend: monthSpend,
-        pacing,
-        pacing_status: pacingStatus
-      };
-    })
-  );
-
-  return res.status(200).json({ success: true, data: campaigns });
+  return res.status(200).json({ success: true, campaigns });
 }
 
 // ============================================
@@ -182,8 +150,8 @@ async function handleTopAds(req, res, accessToken) {
     return res.status(400).json({ error: 'ad_account_id is required' });
   }
 
-  // Get active ads
-  const adsUrl = `https://graph.facebook.com/v21.0/act_${ad_account_id}/ads?fields=id,name,status,campaign{name,objective}&limit=50&effective_status=['ACTIVE']&access_token=${accessToken}`;
+  const cleanId = ad_account_id.replace('act_', '');
+  const adsUrl = `https://graph.facebook.com/v21.0/act_${cleanId}/ads?fields=id,name,status,campaign{name,objective}&limit=50&effective_status=['ACTIVE']&access_token=${accessToken}`;
   const adsResponse = await fetch(adsUrl);
   const adsData = await adsResponse.json();
 
@@ -232,7 +200,6 @@ async function handleTopAds(req, res, accessToken) {
 
   let validAds = adsWithInsights.filter(ad => ad !== null && ad.spend > 0);
 
-  // Sort
   validAds.sort((a, b) => {
     switch (sort_by) {
       case 'roas': return b.roas - a.roas;
@@ -262,6 +229,7 @@ async function handleForecaster(req, res, accessToken) {
       return res.status(400).json({ error: 'ad_account_id and budget are required' });
     }
 
+    const cleanId = ad_account_id.replace('act_', '');
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
@@ -271,7 +239,7 @@ async function handleForecaster(req, res, accessToken) {
       until: endDate.toISOString().split('T')[0]
     });
 
-    const url = `https://graph.facebook.com/v21.0/act_${ad_account_id}/insights?fields=spend,actions,action_values&time_range=${encodeURIComponent(timeRange)}&time_increment=1&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v21.0/act_${cleanId}/insights?fields=spend,actions,action_values&time_range=${encodeURIComponent(timeRange)}&time_increment=1&access_token=${accessToken}`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -284,13 +252,7 @@ async function handleForecaster(req, res, accessToken) {
       const spend = parseFloat(day.spend || 0);
       const revenue = calculateRevenue(day.action_values);
       const results = countResults(day.actions, objective);
-      return {
-        spend,
-        results,
-        revenue,
-        cpa: results > 0 ? spend / results : 0,
-        roas: spend > 0 ? revenue / spend : 0
-      };
+      return { spend, results, revenue, cpa: results > 0 ? spend / results : 0, roas: spend > 0 ? revenue / spend : 0 };
     }).filter(d => d.spend > 0);
 
     if (dailyData.length < 7) {
@@ -299,12 +261,10 @@ async function handleForecaster(req, res, accessToken) {
 
     const cpaValues = dailyData.filter(d => d.cpa > 0).map(d => d.cpa);
     const roasValues = dailyData.filter(d => d.roas > 0).map(d => d.roas);
-
     const avgCPA = average(cpaValues);
     const avgROAS = average(roasValues);
     const cpaStdDev = calculateStdDev(cpaValues);
     const roasStdDev = calculateStdDev(roasValues);
-
     const budgetNum = parseFloat(budget);
 
     return res.status(200).json({
@@ -312,32 +272,11 @@ async function handleForecaster(req, res, accessToken) {
       data: {
         budget: budgetNum,
         scenarios: {
-          pessimistic: {
-            cpa: avgCPA + cpaStdDev,
-            roas: Math.max(0, avgROAS - roasStdDev),
-            estimated_results: Math.floor(budgetNum / (avgCPA + cpaStdDev)),
-            estimated_revenue: budgetNum * Math.max(0, avgROAS - roasStdDev)
-          },
-          realistic: {
-            cpa: avgCPA,
-            roas: avgROAS,
-            estimated_results: Math.floor(budgetNum / avgCPA),
-            estimated_revenue: budgetNum * avgROAS
-          },
-          optimistic: {
-            cpa: Math.max(avgCPA * 0.5, avgCPA - cpaStdDev),
-            roas: avgROAS + roasStdDev,
-            estimated_results: Math.floor(budgetNum / Math.max(avgCPA * 0.5, avgCPA - cpaStdDev)),
-            estimated_revenue: budgetNum * (avgROAS + roasStdDev)
-          }
+          pessimistic: { cpa: avgCPA + cpaStdDev, roas: Math.max(0, avgROAS - roasStdDev), estimated_results: Math.floor(budgetNum / (avgCPA + cpaStdDev)), estimated_revenue: budgetNum * Math.max(0, avgROAS - roasStdDev) },
+          realistic: { cpa: avgCPA, roas: avgROAS, estimated_results: Math.floor(budgetNum / avgCPA), estimated_revenue: budgetNum * avgROAS },
+          optimistic: { cpa: Math.max(avgCPA * 0.5, avgCPA - cpaStdDev), roas: avgROAS + roasStdDev, estimated_results: Math.floor(budgetNum / Math.max(avgCPA * 0.5, avgCPA - cpaStdDev)), estimated_revenue: budgetNum * (avgROAS + roasStdDev) }
         },
-        historical_basis: {
-          avg_cpa: avgCPA,
-          avg_roas: avgROAS,
-          cpa_std_dev: cpaStdDev,
-          roas_std_dev: roasStdDev,
-          days_analyzed: dailyData.length
-        }
+        historical_basis: { avg_cpa: avgCPA, avg_roas: avgROAS, cpa_std_dev: cpaStdDev, roas_std_dev: roasStdDev, days_analyzed: dailyData.length }
       }
     });
   }
@@ -349,6 +288,7 @@ async function handleForecaster(req, res, accessToken) {
     return res.status(400).json({ error: 'ad_account_id is required' });
   }
 
+  const cleanId = ad_account_id.replace('act_', '');
   const endDate = new Date();
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - parseInt(days));
@@ -359,7 +299,7 @@ async function handleForecaster(req, res, accessToken) {
   });
 
   const fields = 'spend,impressions,clicks,ctr,actions,action_values';
-  const url = `https://graph.facebook.com/v21.0/act_${ad_account_id}/insights?fields=${fields}&time_range=${encodeURIComponent(timeRange)}&time_increment=1&access_token=${accessToken}`;
+  const url = `https://graph.facebook.com/v21.0/act_${cleanId}/insights?fields=${fields}&time_range=${encodeURIComponent(timeRange)}&time_increment=1&access_token=${accessToken}`;
 
   const response = await fetch(url);
   const data = await response.json();
@@ -407,18 +347,6 @@ async function handleForecaster(req, res, accessToken) {
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
-
-function parseCookies(cookieHeader) {
-  const cookies = {};
-  if (!cookieHeader) return cookies;
-  cookieHeader.split(';').forEach(cookie => {
-    const [name, ...rest] = cookie.split('=');
-    if (name && rest.length > 0) {
-      cookies[name.trim()] = rest.join('=').trim();
-    }
-  });
-  return cookies;
-}
 
 function getAccountStatus(statusCode) {
   const statuses = { 1: 'ACTIVE', 2: 'DISABLED', 3: 'UNSETTLED', 7: 'PENDING_RISK_REVIEW', 101: 'CLOSED' };
