@@ -159,27 +159,58 @@
 
             <div id="tab-campaigns" class="tab-content hidden">
                 <!-- Summary Cards -->
-                <div id="campaignsSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 hidden">
+                <div id="campaignsSummary" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 hidden">
                     <div class="bg-card rounded-xl border border-theme p-4">
-                        <p class="text-secondary text-sm">Total Campaigns</p>
-                        <p class="text-2xl font-bold text-primary" id="summaryTotal">0</p>
+                        <p class="text-secondary text-xs">Campaigns</p>
+                        <p class="text-xl font-bold text-primary" id="summaryTotal">0</p>
+                        <p class="text-green-500 text-xs" id="summaryActive">0 active</p>
                     </div>
                     <div class="bg-card rounded-xl border border-theme p-4">
-                        <p class="text-secondary text-sm">Active</p>
-                        <p class="text-2xl font-bold text-green-500" id="summaryActive">0</p>
+                        <p class="text-secondary text-xs">Spend</p>
+                        <p class="text-xl font-bold text-primary" id="summarySpend">€0</p>
                     </div>
                     <div class="bg-card rounded-xl border border-theme p-4">
-                        <p class="text-secondary text-sm">Today Spend</p>
-                        <p class="text-2xl font-bold text-primary" id="summarySpendToday">€0</p>
+                        <p class="text-secondary text-xs">Impressions</p>
+                        <p class="text-xl font-bold text-primary" id="summaryImpressions">0</p>
                     </div>
                     <div class="bg-card rounded-xl border border-theme p-4">
-                        <p class="text-secondary text-sm">Month Spend</p>
-                        <p class="text-2xl font-bold text-primary" id="summarySpendMonth">€0</p>
+                        <p class="text-secondary text-xs">Clicks</p>
+                        <p class="text-xl font-bold text-primary" id="summaryClicks">0</p>
+                    </div>
+                    <div class="bg-card rounded-xl border border-theme p-4">
+                        <p class="text-secondary text-xs">CTR</p>
+                        <p class="text-xl font-bold text-primary" id="summaryCTR">0%</p>
                     </div>
                 </div>
 
-                <!-- Filters -->
-                <div class="flex flex-wrap gap-4 mb-4">
+                <!-- Date Range Info -->
+                <div id="dateRangeInfo" class="mb-4 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-sm text-indigo-400 hidden">
+                    <span id="dateRangeText">Showing data for: Today</span>
+                </div>
+
+                <!-- Filters Row 1: Date Range -->
+                <div class="flex flex-wrap gap-3 mb-3">
+                    <select id="datePreset" class="px-4 py-2 bg-input border border-theme rounded-lg text-primary">
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="last_3d">Last 3 Days</option>
+                        <option value="last_7d">Last 7 Days</option>
+                        <option value="last_14d">Last 14 Days</option>
+                        <option value="last_30d">Last 30 Days</option>
+                        <option value="this_month">This Month</option>
+                        <option value="last_month">Last Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                    <div id="customDateRange" class="hidden flex items-center gap-2">
+                        <input type="date" id="dateFrom" class="px-3 py-2 bg-input border border-theme rounded-lg text-primary text-sm">
+                        <span class="text-secondary">to</span>
+                        <input type="date" id="dateTo" class="px-3 py-2 bg-input border border-theme rounded-lg text-primary text-sm">
+                        <button id="applyCustomDate" class="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm rounded-lg">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Filters Row 2: Search, Status, Sort -->
+                <div class="flex flex-wrap gap-3 mb-4">
                     <div class="flex-1 min-w-64">
                         <input type="text" id="campaignSearch" class="w-full px-4 py-2 bg-input border border-theme rounded-lg text-primary" placeholder="Search campaigns...">
                     </div>
@@ -199,7 +230,7 @@
                     </select>
                     <button id="loadCampaignsBtn" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        Load Campaigns
+                        Load
                     </button>
                 </div>
 
@@ -212,7 +243,7 @@
                 
                 <div id="noCampaigns" class="bg-card rounded-xl border border-theme p-8 text-center">
                     <p class="text-secondary mb-2">No campaigns loaded</p>
-                    <p class="text-muted text-sm">Click "Load Campaigns" to fetch from Meta</p>
+                    <p class="text-muted text-sm">Click "Load" to fetch from Meta</p>
                 </div>
             </div>
         </section>
@@ -228,13 +259,13 @@
                 </div>
 
                 <!-- Campaign Stats -->
-                <div id="campaignStats" class="grid grid-cols-2 gap-3 mb-6 p-4 bg-input rounded-lg">
-                    <div><p class="text-muted text-xs">Today Spend</p><p class="text-primary font-semibold" id="modalSpendToday">€0</p></div>
-                    <div><p class="text-muted text-xs">Month Spend</p><p class="text-primary font-semibold" id="modalSpendMonth">€0</p></div>
-                    <div><p class="text-muted text-xs">Daily Budget</p><p class="text-primary font-semibold" id="modalDailyBudget">-</p></div>
-                    <div><p class="text-muted text-xs">Pacing</p><p class="font-semibold" id="modalPacing">-</p></div>
+                <div id="campaignStats" class="grid grid-cols-3 gap-3 mb-6 p-4 bg-input rounded-lg">
+                    <div><p class="text-muted text-xs">Spend</p><p class="text-primary font-semibold" id="modalSpend">€0</p></div>
                     <div><p class="text-muted text-xs">Impressions</p><p class="text-primary font-semibold" id="modalImpressions">0</p></div>
                     <div><p class="text-muted text-xs">Clicks</p><p class="text-primary font-semibold" id="modalClicks">0</p></div>
+                    <div><p class="text-muted text-xs">CTR</p><p class="text-primary font-semibold" id="modalCTR">0%</p></div>
+                    <div><p class="text-muted text-xs">Daily Budget</p><p class="text-primary font-semibold" id="modalDailyBudget">-</p></div>
+                    <div><p class="text-muted text-xs">Today Pacing</p><p class="font-semibold" id="modalPacing">-</p></div>
                 </div>
 
                 <div class="space-y-4">
@@ -324,6 +355,7 @@
         var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         var currentUser = null, metaConnection = null, adAccounts = [], accountBudgets = [], campaignBudgets = [];
         var selectedAccount = null, selectedCampaign = null, loadedCampaigns = {}, allCampaigns = [];
+        var currentDateRange = { preset: 'today', from: null, to: null };
 
         // Theme
         function initTheme() {
@@ -372,6 +404,29 @@
         document.getElementById('campaignOverspendThreshold').addEventListener('input', function() { document.getElementById('campaignOverspendValue').textContent = this.value + '%'; });
         document.getElementById('campaignUnderspendThreshold').addEventListener('input', function() { document.getElementById('campaignUnderspendValue').textContent = this.value + '%'; });
 
+        // Date Preset
+        document.getElementById('datePreset').addEventListener('change', function() {
+            var preset = this.value;
+            if (preset === 'custom') {
+                document.getElementById('customDateRange').classList.remove('hidden');
+            } else {
+                document.getElementById('customDateRange').classList.add('hidden');
+                currentDateRange = { preset: preset, from: null, to: null };
+                loadCampaignsData();
+            }
+        });
+
+        document.getElementById('applyCustomDate').addEventListener('click', function() {
+            var from = document.getElementById('dateFrom').value;
+            var to = document.getElementById('dateTo').value;
+            if (from && to) {
+                currentDateRange = { preset: 'custom', from: from, to: to };
+                loadCampaignsData();
+            } else {
+                alert('Please select both start and end dates');
+            }
+        });
+
         // Filters
         document.getElementById('campaignSearch').addEventListener('input', filterCampaigns);
         document.getElementById('statusFilter').addEventListener('change', filterCampaigns);
@@ -390,8 +445,8 @@
 
             filtered.sort(function(a, b) {
                 switch(sort) {
-                    case 'spend_desc': return b.spend_today - a.spend_today;
-                    case 'spend_asc': return a.spend_today - b.spend_today;
+                    case 'spend_desc': return b.spend - a.spend;
+                    case 'spend_asc': return a.spend - b.spend;
                     case 'name_asc': return a.name.localeCompare(b.name);
                     case 'name_desc': return b.name.localeCompare(a.name);
                     case 'pacing': 
@@ -495,7 +550,7 @@
             document.getElementById('tab-account-settings').classList.remove('hidden');
             document.getElementById('tab-campaigns').classList.add('hidden');
             
-            allCampaigns = loadedCampaigns[account.account_id] || [];
+            allCampaigns = [];
             renderCampaignsList();
             
             document.getElementById('section-accounts').classList.add('hidden');
@@ -533,28 +588,53 @@
             document.getElementById('section-accounts').classList.remove('hidden');
         });
 
-        document.getElementById('loadCampaignsBtn').addEventListener('click', async function() {
+        document.getElementById('loadCampaignsBtn').addEventListener('click', loadCampaignsData);
+
+        async function loadCampaignsData() {
             if (!selectedAccount || !currentUser) return;
-            var btn = this; btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block">⟳</span> Loading...';
+            var btn = document.getElementById('loadCampaignsBtn');
+            btn.disabled = true; btn.innerHTML = '<span class="animate-spin inline-block">⟳</span>';
             document.getElementById('campaignsLoading').classList.remove('hidden');
             document.getElementById('noCampaigns').classList.add('hidden');
             document.getElementById('campaignsList').innerHTML = '';
             document.getElementById('campaignsSummary').classList.add('hidden');
+            document.getElementById('dateRangeInfo').classList.add('hidden');
             
             try {
-                var response = await fetch('/api/meta?action=campaigns&account_id=' + selectedAccount.account_id + '&user_id=' + currentUser.id);
+                var url = '/api/meta?action=campaigns&account_id=' + selectedAccount.account_id + '&user_id=' + currentUser.id;
+                url += '&date_preset=' + currentDateRange.preset;
+                if (currentDateRange.preset === 'custom' && currentDateRange.from && currentDateRange.to) {
+                    url += '&date_from=' + currentDateRange.from + '&date_to=' + currentDateRange.to;
+                }
+                
+                var response = await fetch(url);
                 var data = await response.json();
-                if (data.error) { alert('Error: ' + data.error); }
-                else {
+                
+                if (data.error) { 
+                    alert('Error: ' + data.error); 
+                } else {
                     allCampaigns = data.campaigns || [];
                     loadedCampaigns[selectedAccount.account_id] = allCampaigns;
                     
                     if (data.summary) {
                         document.getElementById('summaryTotal').textContent = data.summary.total;
-                        document.getElementById('summaryActive').textContent = data.summary.active;
-                        document.getElementById('summarySpendToday').textContent = '€' + data.summary.total_spend_today.toFixed(2);
-                        document.getElementById('summarySpendMonth').textContent = '€' + data.summary.total_spend_month.toFixed(2);
+                        document.getElementById('summaryActive').textContent = data.summary.active + ' active';
+                        document.getElementById('summarySpend').textContent = '€' + data.summary.total_spend.toFixed(2);
+                        document.getElementById('summaryImpressions').textContent = formatNumber(data.summary.total_impressions);
+                        document.getElementById('summaryClicks').textContent = formatNumber(data.summary.total_clicks);
+                        document.getElementById('summaryCTR').textContent = data.summary.avg_ctr + '%';
                         document.getElementById('campaignsSummary').classList.remove('hidden');
+                    }
+                    
+                    if (data.date_range) {
+                        var rangeText = 'Showing: ';
+                        if (data.date_range.since === data.date_range.until) {
+                            rangeText += data.date_range.since;
+                        } else {
+                            rangeText += data.date_range.since + ' to ' + data.date_range.until;
+                        }
+                        document.getElementById('dateRangeText').textContent = rangeText;
+                        document.getElementById('dateRangeInfo').classList.remove('hidden');
                     }
                     
                     renderCampaignsList();
@@ -563,8 +643,14 @@
             
             document.getElementById('campaignsLoading').classList.add('hidden');
             btn.disabled = false;
-            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refresh';
-        });
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Load';
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
 
         function renderCampaignsList() {
             filterCampaigns();
@@ -590,9 +676,9 @@
                 var statusColors = { ACTIVE: 'green', PAUSED: 'yellow', DELETED: 'red', ARCHIVED: 'gray' };
                 var color = statusColors[campaign.status] || 'gray';
                 
-                var pacingHtml = '';
+                var pacingHtml = '-';
                 if (campaign.pacing_percent !== null) {
-                    pacingHtml = '<span class="pacing-' + campaign.pacing_status + ' text-sm font-medium">' + campaign.pacing_percent + '%</span>';
+                    pacingHtml = '<span class="pacing-' + campaign.pacing_status + '">' + campaign.pacing_percent + '%</span>';
                 }
                 
                 var card = document.createElement('div');
@@ -605,11 +691,12 @@
                         '</div>' +
                         '<span class="px-2 py-1 rounded-full text-xs font-medium bg-' + color + '-500/20 text-' + color + '-500 ml-2">' + campaign.status + '</span>' +
                     '</div>' +
-                    '<div class="grid grid-cols-4 gap-4 text-sm">' +
-                        '<div><p class="text-muted text-xs">Today</p><p class="text-primary font-medium">€' + campaign.spend_today.toFixed(2) + '</p></div>' +
-                        '<div><p class="text-muted text-xs">Month</p><p class="text-primary font-medium">€' + campaign.spend_this_month.toFixed(2) + '</p></div>' +
-                        '<div><p class="text-muted text-xs">Budget</p><p class="text-primary font-medium">' + (campaign.daily_budget ? '€' + campaign.daily_budget.toFixed(0) + '/d' : '-') + '</p></div>' +
-                        '<div><p class="text-muted text-xs">Pacing</p>' + pacingHtml + '</div>' +
+                    '<div class="grid grid-cols-5 gap-3 text-sm">' +
+                        '<div><p class="text-muted text-xs">Spend</p><p class="text-primary font-medium">€' + campaign.spend.toFixed(2) + '</p></div>' +
+                        '<div><p class="text-muted text-xs">Impr</p><p class="text-primary font-medium">' + formatNumber(campaign.impressions) + '</p></div>' +
+                        '<div><p class="text-muted text-xs">Clicks</p><p class="text-primary font-medium">' + formatNumber(campaign.clicks) + '</p></div>' +
+                        '<div><p class="text-muted text-xs">CTR</p><p class="text-primary font-medium">' + campaign.ctr.toFixed(2) + '%</p></div>' +
+                        '<div><p class="text-muted text-xs">Pacing</p><p class="font-medium">' + pacingHtml + '</p></div>' +
                     '</div>';
                 
                 card.addEventListener('click', function() { openCampaignModal(campaign); });
@@ -621,11 +708,11 @@
             selectedCampaign = campaign;
             document.getElementById('campaignModalTitle').textContent = campaign.name;
             
-            document.getElementById('modalSpendToday').textContent = '€' + campaign.spend_today.toFixed(2);
-            document.getElementById('modalSpendMonth').textContent = '€' + campaign.spend_this_month.toFixed(2);
+            document.getElementById('modalSpend').textContent = '€' + campaign.spend.toFixed(2);
+            document.getElementById('modalImpressions').textContent = formatNumber(campaign.impressions);
+            document.getElementById('modalClicks').textContent = formatNumber(campaign.clicks);
+            document.getElementById('modalCTR').textContent = campaign.ctr.toFixed(2) + '%';
             document.getElementById('modalDailyBudget').textContent = campaign.daily_budget ? '€' + campaign.daily_budget.toFixed(0) : '-';
-            document.getElementById('modalImpressions').textContent = campaign.impressions_today.toLocaleString();
-            document.getElementById('modalClicks').textContent = campaign.clicks_today.toLocaleString();
             
             var pacingEl = document.getElementById('modalPacing');
             if (campaign.pacing_percent !== null) {
