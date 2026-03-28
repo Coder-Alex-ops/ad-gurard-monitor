@@ -9,256 +9,279 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
-        .nav-item.active { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .nav-item.active { background: var(--nav-active-bg); color: var(--nav-active-text); }
+        
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --nav-active-bg: rgba(99, 102, 241, 0.1);
+            --nav-active-text: #6366f1;
+            --card-hover: #f1f5f9;
+        }
+        
+        .dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --nav-active-bg: rgba(99, 102, 241, 0.2);
+            --nav-active-text: #818cf8;
+            --card-hover: #334155;
+        }
+        
+        body { background: var(--bg-primary); color: var(--text-primary); }
+        .bg-card { background: var(--bg-secondary); }
+        .border-theme { border-color: var(--border-color); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .text-muted { color: var(--text-muted); }
+        .bg-input { background: var(--bg-tertiary); }
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen">
+<body class="dark min-h-screen">
     
-    <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 h-full w-64 bg-slate-800 border-r border-slate-700 p-4 flex flex-col">
-        <div class="flex items-center gap-3 mb-8">
-            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <span class="text-white font-bold">AG</span>
+    <aside class="fixed left-0 top-0 h-full w-64 bg-card border-r border-theme p-4 flex flex-col">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <span class="text-white font-bold">AG</span>
+                </div>
+                <span class="text-primary font-semibold">AdGuardian</span>
             </div>
-            <span class="text-white font-semibold">AdGuardian</span>
+            <button id="themeToggle" class="p-2 rounded-lg bg-input hover:opacity-80 transition-colors" title="Toggle theme">
+                <svg id="sunIcon" class="w-5 h-5 text-secondary hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <svg id="moonIcon" class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </button>
         </div>
         
         <nav class="space-y-1">
             <a href="#accounts" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors" data-section="accounts">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                </svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                 <span class="font-medium">Ad Accounts</span>
             </a>
-            <a href="#alerts" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors" data-section="alerts">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
+            <a href="#alerts" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:bg-input transition-colors" data-section="alerts">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                 <span>Alerts</span>
             </a>
-            <a href="#settings" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors" data-section="settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
+            <a href="#settings" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:bg-input transition-colors" data-section="settings">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 <span>Settings</span>
             </a>
         </nav>
         
-        <div id="connectMetaBox" class="mt-8 p-4 bg-slate-700/50 rounded-xl hidden">
-            <p class="text-sm text-slate-400 mb-3">Connect your ad accounts</p>
-            <button id="connectMetaBtn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                Connect Meta
-            </button>
+        <div id="connectMetaBox" class="mt-8 p-4 bg-input rounded-xl hidden">
+            <p class="text-sm text-secondary mb-3">Connect your ad accounts</p>
+            <button id="connectMetaBtn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">Connect Meta</button>
         </div>
 
         <div id="connectedStatus" class="mt-8 p-4 bg-green-500/10 border border-green-500/20 rounded-xl hidden">
-            <div class="flex items-center gap-2 text-green-400 text-sm">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
+            <div class="flex items-center gap-2 text-green-500 text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 <span>Meta Connected</span>
             </div>
-            <p class="text-slate-400 text-xs mt-1" id="accountsInfo">0 ad accounts</p>
+            <p class="text-secondary text-xs mt-1" id="accountsInfo">0 ad accounts</p>
         </div>
         
         <div class="flex-1"></div>
         
-        <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl">
+        <div class="flex items-center gap-3 p-3 bg-input rounded-xl">
             <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium" id="userAvatar">?</div>
             <div class="flex-1 min-w-0">
-                <p class="text-white text-sm font-medium truncate" id="userName">Loading...</p>
-                <p class="text-slate-400 text-xs truncate" id="userEmail">...</p>
+                <p class="text-primary text-sm font-medium truncate" id="userName">Loading...</p>
+                <p class="text-secondary text-xs truncate" id="userEmail">...</p>
             </div>
-            <button id="logoutBtn" class="p-2 text-slate-400 hover:text-white transition-colors" title="Logout">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
+            <button id="logoutBtn" class="p-2 text-secondary hover:text-primary transition-colors" title="Logout">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
         </div>
     </aside>
     
     <main class="ml-64 p-8">
         
-        <!-- Ad Accounts Section -->
         <section id="section-accounts">
             <div class="mb-8">
-                <h1 class="text-2xl font-bold text-white">Ad Accounts</h1>
-                <p class="text-slate-400">Select an account to configure budget alerts</p>
+                <h1 class="text-2xl font-bold text-primary">Ad Accounts</h1>
+                <p class="text-secondary">Select an account to configure budget alerts</p>
             </div>
-            
-            <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Accounts will be rendered here -->
-            </div>
-
+            <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             <div id="gettingStarted" class="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-8 border border-indigo-500/20 hidden">
-                <div class="flex items-start gap-6">
-                    <div class="w-16 h-16 bg-indigo-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold text-white mb-2">Get Started with AdGuardian</h2>
-                        <p class="text-slate-400 mb-4">Connect your Meta Ads account to start monitoring your campaigns.</p>
-                        <button id="connectMetaBtn2" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                            </svg>
-                            Connect Meta Ads
-                        </button>
-                    </div>
-                </div>
+                <h2 class="text-xl font-bold text-primary mb-2">Get Started with AdGuardian</h2>
+                <p class="text-secondary mb-4">Connect your Meta Ads account to start monitoring your campaigns.</p>
+                <button id="connectMetaBtn2" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg">Connect Meta Ads</button>
             </div>
         </section>
 
-        <!-- Account Detail Section (hidden by default) -->
         <section id="section-account-detail" class="hidden">
-            <div class="mb-8">
-                <button id="backToAccounts" class="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
+            <div class="mb-6">
+                <button id="backToAccounts" class="flex items-center gap-2 text-secondary hover:text-primary mb-4">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back to Accounts
                 </button>
-                <h1 class="text-2xl font-bold text-white" id="accountDetailName">Account Name</h1>
-                <p class="text-slate-400" id="accountDetailId">Account ID</p>
+                <h1 class="text-2xl font-bold text-primary" id="accountDetailName">Account Name</h1>
+                <p class="text-secondary" id="accountDetailId">Account ID</p>
             </div>
             
-            <!-- Budget Alert Configuration -->
-            <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-2xl">
-                <h3 class="text-white font-semibold mb-6 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                    Budget Alert Settings
-                </h3>
-                
-                <div class="space-y-6">
-                    <!-- Enable Alerts -->
-                    <label class="flex items-center justify-between">
+            <div class="flex gap-4 mb-6 border-b border-theme">
+                <button class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-indigo-500 text-indigo-500" data-tab="account-settings">Account Budget</button>
+                <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-secondary hover:text-primary" data-tab="campaigns">Campaigns</button>
+            </div>
+
+            <div id="tab-account-settings" class="tab-content">
+                <div class="bg-card rounded-xl border border-theme p-6 max-w-2xl">
+                    <h3 class="text-primary font-semibold mb-6">Account Budget Alert</h3>
+                    <div class="space-y-6">
+                        <label class="flex items-center justify-between">
+                            <div><p class="text-primary">Enable Alerts</p><p class="text-secondary text-sm">Receive email alerts for this account</p></div>
+                            <input type="checkbox" id="alertsEnabled" checked class="w-5 h-5 rounded">
+                        </label>
                         <div>
-                            <p class="text-white">Enable Alerts</p>
-                            <p class="text-slate-400 text-sm">Receive email alerts for this account</p>
+                            <p class="text-primary mb-2">Monthly Budget</p>
+                            <div class="flex gap-2">
+                                <span class="flex items-center px-3 bg-input border border-theme rounded-l-lg text-secondary">€</span>
+                                <input type="number" id="monthlyBudget" class="flex-1 px-4 py-2 bg-input border border-theme rounded-r-lg text-primary" placeholder="5000">
+                            </div>
                         </div>
-                        <input type="checkbox" id="alertsEnabled" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-indigo-500">
-                    </label>
-
-                    <!-- Monthly Budget -->
-                    <div>
-                        <label class="block">
-                            <p class="text-white mb-2">Monthly Budget</p>
-                            <div class="flex gap-2">
-                                <span class="flex items-center px-3 bg-slate-700 border border-slate-600 rounded-l-lg text-slate-400">€</span>
-                                <input type="number" id="monthlyBudget" class="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-r-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500" placeholder="5000">
+                        <div>
+                            <p class="text-primary mb-2">Budget Period</p>
+                            <div class="flex gap-2 items-center">
+                                <input type="date" id="periodStart" class="flex-1 px-4 py-2 bg-input border border-theme rounded-lg text-primary">
+                                <span class="text-secondary">to</span>
+                                <input type="date" id="periodEnd" class="flex-1 px-4 py-2 bg-input border border-theme rounded-lg text-primary">
                             </div>
-                            <p class="text-slate-500 text-sm mt-1">The total budget for this account per month</p>
-                        </label>
-                    </div>
-
-                    <!-- Period -->
-                    <div>
-                        <label class="block">
-                            <p class="text-white mb-2">Budget Period</p>
-                            <div class="flex gap-2">
-                                <input type="date" id="periodStart" class="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500">
-                                <span class="flex items-center text-slate-400">to</span>
-                                <input type="date" id="periodEnd" class="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-indigo-500">
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- Overspend Threshold -->
-                    <div>
-                        <label class="block">
-                            <p class="text-white mb-2">Overspend Alert Threshold</p>
+                        </div>
+                        <div>
+                            <p class="text-primary mb-2">Overspend Threshold</p>
                             <div class="flex items-center gap-4">
-                                <input type="range" id="overspendThreshold" min="100" max="200" value="120" class="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                                <span class="text-white font-medium w-16 text-right" id="overspendValue">120%</span>
+                                <input type="range" id="overspendThreshold" min="100" max="200" value="120" class="flex-1">
+                                <span class="text-primary font-medium w-16 text-right" id="overspendValue">120%</span>
                             </div>
-                            <p class="text-slate-500 text-sm mt-1">Alert when spending exceeds this % of expected pace</p>
-                        </label>
-                    </div>
-
-                    <!-- Underspend Threshold -->
-                    <div>
-                        <label class="block">
-                            <p class="text-white mb-2">Underspend Alert Threshold</p>
+                        </div>
+                        <div>
+                            <p class="text-primary mb-2">Underspend Threshold</p>
                             <div class="flex items-center gap-4">
-                                <input type="range" id="underspendThreshold" min="0" max="100" value="50" class="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                                <span class="text-white font-medium w-16 text-right" id="underspendValue">50%</span>
+                                <input type="range" id="underspendThreshold" min="0" max="100" value="50" class="flex-1">
+                                <span class="text-primary font-medium w-16 text-right" id="underspendValue">50%</span>
                             </div>
-                            <p class="text-slate-500 text-sm mt-1">Alert when spending is below this % of expected pace</p>
-                        </label>
+                        </div>
+                        <div class="pt-4 border-t border-theme flex gap-3">
+                            <button id="saveAccountSettings" class="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg">Save Settings</button>
+                            <button id="deleteAccountSettings" class="px-5 py-2.5 bg-input hover:bg-red-500/20 hover:text-red-400 text-secondary font-medium rounded-lg">Remove Alert</button>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="pt-4 border-t border-slate-700 flex gap-3">
-                        <button id="saveAccountSettings" class="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
-                            Save Settings
-                        </button>
-                        <button id="deleteAccountSettings" class="px-5 py-2.5 bg-slate-700 hover:bg-red-500/20 hover:text-red-400 text-slate-400 font-medium rounded-lg transition-colors">
-                            Remove Alert
-                        </button>
-                    </div>
+            <div id="tab-campaigns" class="tab-content hidden">
+                <div class="mb-4 flex items-center justify-between">
+                    <p class="text-secondary text-sm">Configure alerts for individual campaigns</p>
+                    <button id="loadCampaignsBtn" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg">Load Campaigns</button>
+                </div>
+                <div id="campaignsLoading" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+                    <p class="text-secondary mt-2">Loading campaigns...</p>
+                </div>
+                <div id="campaignsList" class="space-y-3"></div>
+                <div id="noCampaigns" class="bg-card rounded-xl border border-theme p-8 text-center">
+                    <p class="text-secondary mb-2">No campaigns loaded</p>
+                    <p class="text-muted text-sm">Click "Load Campaigns" to fetch from Meta</p>
                 </div>
             </div>
         </section>
 
-        <!-- Alerts Section -->
+        <div id="campaignModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-card rounded-xl border border-theme p-6 w-full max-w-lg mx-4">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-primary" id="campaignModalTitle">Campaign Settings</h3>
+                    <button id="closeCampaignModal" class="text-secondary hover:text-primary">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <label class="flex items-center justify-between">
+                        <div><p class="text-primary">Enable Alerts</p></div>
+                        <input type="checkbox" id="campaignAlertsEnabled" checked class="w-5 h-5 rounded">
+                    </label>
+                    <div>
+                        <p class="text-primary mb-2">Campaign Budget</p>
+                        <div class="flex gap-2">
+                            <span class="flex items-center px-3 bg-input border border-theme rounded-l-lg text-secondary">€</span>
+                            <input type="number" id="campaignBudget" class="flex-1 px-4 py-2 bg-input border border-theme rounded-r-lg text-primary" placeholder="1000">
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-primary mb-2">Budget Period</p>
+                        <select id="campaignBudgetPeriod" class="w-full px-4 py-2 bg-input border border-theme rounded-lg text-primary">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="total">Total (Lifetime)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <p class="text-primary mb-2">Overspend: <span id="campaignOverspendValue">120%</span></p>
+                        <input type="range" id="campaignOverspendThreshold" min="100" max="200" value="120" class="w-full">
+                    </div>
+                    <div>
+                        <p class="text-primary mb-2">Underspend: <span id="campaignUnderspendValue">50%</span></p>
+                        <input type="range" id="campaignUnderspendThreshold" min="0" max="100" value="50" class="w-full">
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button id="saveCampaignSettings" class="flex-1 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg">Save</button>
+                        <button id="deleteCampaignSettings" class="px-5 py-2.5 bg-input hover:bg-red-500/20 hover:text-red-400 text-secondary font-medium rounded-lg">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <section id="section-alerts" class="hidden">
             <div class="mb-8">
-                <h1 class="text-2xl font-bold text-white">Active Alerts</h1>
-                <p class="text-slate-400">Accounts with budget monitoring enabled</p>
+                <h1 class="text-2xl font-bold text-primary">Active Alerts</h1>
+                <p class="text-secondary">Accounts and campaigns with monitoring enabled</p>
             </div>
-            
-            <div id="alertsList" class="space-y-4">
-                <!-- Alerts will be rendered here -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-primary mb-3">Account Alerts</h3>
+                <div id="accountAlertsList" class="space-y-3"></div>
+                <div id="noAccountAlerts" class="bg-card rounded-xl border border-theme p-6 text-center hidden"><p class="text-secondary">No account alerts</p></div>
             </div>
-            
-            <div id="noAlerts" class="bg-slate-800 rounded-xl border border-slate-700 p-8 text-center hidden">
-                <svg class="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <p class="text-slate-400 mb-2">No alerts configured</p>
-                <p class="text-slate-500 text-sm">Select an ad account to set up budget alerts.</p>
+            <div>
+                <h3 class="text-lg font-semibold text-primary mb-3">Campaign Alerts</h3>
+                <div id="campaignAlertsList" class="space-y-3"></div>
+                <div id="noCampaignAlerts" class="bg-card rounded-xl border border-theme p-6 text-center hidden"><p class="text-secondary">No campaign alerts</p></div>
             </div>
         </section>
 
-        <!-- Settings Section -->
         <section id="section-settings" class="hidden">
             <div class="mb-8">
-                <h1 class="text-2xl font-bold text-white">Settings</h1>
-                <p class="text-slate-400">Manage your notification preferences</p>
+                <h1 class="text-2xl font-bold text-primary">Settings</h1>
+                <p class="text-secondary">Notification preferences</p>
             </div>
-            <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 max-w-2xl">
-                <h3 class="text-white font-semibold mb-4">Email Notifications</h3>
+            <div class="bg-card rounded-xl border border-theme p-6 max-w-2xl">
                 <div class="space-y-4">
                     <label class="flex items-center justify-between">
-                        <div>
-                            <p class="text-white">Overspending Alerts</p>
-                            <p class="text-slate-400 text-sm">Get notified when spend exceeds budget</p>
-                        </div>
-                        <input type="checkbox" id="alertOverspending" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-indigo-500">
+                        <div><p class="text-primary">Overspending Alerts</p></div>
+                        <input type="checkbox" id="alertOverspending" checked class="w-5 h-5 rounded">
                     </label>
                     <label class="flex items-center justify-between">
-                        <div>
-                            <p class="text-white">Underspending Alerts</p>
-                            <p class="text-slate-400 text-sm">Get notified when spend is below target</p>
-                        </div>
-                        <input type="checkbox" id="alertUnderspending" checked class="w-5 h-5 rounded bg-slate-700 border-slate-600 text-indigo-500">
+                        <div><p class="text-primary">Underspending Alerts</p></div>
+                        <input type="checkbox" id="alertUnderspending" checked class="w-5 h-5 rounded">
                     </label>
-                    <div class="pt-4 border-t border-slate-700">
-                        <label class="block">
-                            <p class="text-white mb-2">Notification Email</p>
-                            <input type="email" id="notificationEmail" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500" placeholder="your@email.com">
-                        </label>
+                    <div class="pt-4 border-t border-theme">
+                        <p class="text-primary mb-2">Notification Email</p>
+                        <input type="email" id="notificationEmail" class="w-full px-4 py-2 bg-input border border-theme rounded-lg text-primary" placeholder="your@email.com">
                     </div>
-                    <button id="saveSettings" class="mt-4 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors">
-                        Save Settings
-                    </button>
+                    <button id="saveSettings" class="mt-4 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg">Save Settings</button>
                 </div>
             </div>
         </section>
@@ -267,29 +290,37 @@
     <script>
         var SUPABASE_URL = 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
         var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impwcm52ZnRkZm5oc2ZldW94a2toIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTE3MTUsImV4cCI6MjA4ODk2NzcxNX0.YqJcKE-GJPCdo6nNly4FTOMHx_N0Bvj4-DIFcoU6-Hk';
-        
         var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        var currentUser = null;
-        var metaConnection = null;
-        var adAccounts = [];
-        var accountBudgets = [];
-        var selectedAccount = null;
+        var currentUser = null, metaConnection = null, adAccounts = [], accountBudgets = [], campaignBudgets = [];
+        var selectedAccount = null, selectedCampaign = null, loadedCampaigns = {};
 
-        // Navigation
+        function initTheme() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'light') {
+                document.body.classList.remove('dark');
+                document.getElementById('sunIcon').classList.remove('hidden');
+                document.getElementById('moonIcon').classList.add('hidden');
+            }
+        }
+        
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            var isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('sunIcon').classList.toggle('hidden', isDark);
+            document.getElementById('moonIcon').classList.toggle('hidden', !isDark);
+        });
+        initTheme();
+
         function showSection(name) {
             document.querySelectorAll('main > section').forEach(function(s) { s.classList.add('hidden'); });
             var section = document.getElementById('section-' + name);
             if (section) section.classList.remove('hidden');
-            
             document.querySelectorAll('.nav-item').forEach(function(item) {
                 item.classList.remove('active');
-                item.classList.add('text-slate-400');
+                item.classList.add('text-secondary');
             });
             var nav = document.querySelector('[data-section="' + name + '"]');
-            if (nav) {
-                nav.classList.add('active');
-                nav.classList.remove('text-slate-400');
-            }
+            if (nav) { nav.classList.add('active'); nav.classList.remove('text-secondary'); }
         }
 
         document.querySelectorAll('.nav-item').forEach(function(item) {
@@ -300,128 +331,89 @@
             });
         });
 
-        // Threshold sliders
-        document.getElementById('overspendThreshold').addEventListener('input', function() {
-            document.getElementById('overspendValue').textContent = this.value + '%';
-        });
-        document.getElementById('underspendThreshold').addEventListener('input', function() {
-            document.getElementById('underspendValue').textContent = this.value + '%';
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(function(b) {
+                    b.classList.remove('active', 'border-indigo-500', 'text-indigo-500');
+                    b.classList.add('border-transparent', 'text-secondary');
+                });
+                this.classList.add('active', 'border-indigo-500', 'text-indigo-500');
+                this.classList.remove('border-transparent', 'text-secondary');
+                document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.add('hidden'); });
+                document.getElementById('tab-' + this.dataset.tab).classList.remove('hidden');
+            });
         });
 
-        // Init
+        document.getElementById('overspendThreshold').addEventListener('input', function() { document.getElementById('overspendValue').textContent = this.value + '%'; });
+        document.getElementById('underspendThreshold').addEventListener('input', function() { document.getElementById('underspendValue').textContent = this.value + '%'; });
+        document.getElementById('campaignOverspendThreshold').addEventListener('input', function() { document.getElementById('campaignOverspendValue').textContent = this.value + '%'; });
+        document.getElementById('campaignUnderspendThreshold').addEventListener('input', function() { document.getElementById('campaignUnderspendValue').textContent = this.value + '%'; });
+
         async function init() {
             var sessionData = await db.auth.getSession();
-            var session = sessionData.data.session;
-            
-            if (!session) {
-                window.location.href = '/login';
-                return;
-            }
-            
-            currentUser = session.user;
-            
+            if (!sessionData.data.session) { window.location.href = '/login'; return; }
+            currentUser = sessionData.data.session.user;
             var email = currentUser.email || 'Unknown';
             var name = currentUser.user_metadata && currentUser.user_metadata.name ? currentUser.user_metadata.name : email.split('@')[0];
-            
             document.getElementById('userName').textContent = name;
             document.getElementById('userEmail').textContent = email;
             document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
             document.getElementById('notificationEmail').value = email;
-            
             await loadMetaConnection();
             await loadAccountBudgets();
+            await loadCampaignBudgets();
             await loadNotificationSettings();
-            
+            renderAlerts();
             if (window.location.hash) {
                 var section = window.location.hash.replace('#', '');
-                if (['accounts', 'alerts', 'settings'].indexOf(section) !== -1) {
-                    showSection(section);
-                }
+                if (['accounts', 'alerts', 'settings'].indexOf(section) !== -1) showSection(section);
             }
         }
 
-        // Load Meta Connection
         async function loadMetaConnection() {
             var result = await db.from('meta_connections').select('*').eq('user_id', currentUser.id).single();
-            
             if (result.error || !result.data) {
                 document.getElementById('connectMetaBox').classList.remove('hidden');
                 document.getElementById('connectedStatus').classList.add('hidden');
                 document.getElementById('gettingStarted').classList.remove('hidden');
-                document.getElementById('accountsGrid').classList.add('hidden');
                 return;
             }
-            
             metaConnection = result.data;
             adAccounts = result.data.ad_accounts || [];
-            
             document.getElementById('connectMetaBox').classList.add('hidden');
             document.getElementById('connectedStatus').classList.remove('hidden');
             document.getElementById('gettingStarted').classList.add('hidden');
-            document.getElementById('accountsGrid').classList.remove('hidden');
-            
             document.getElementById('accountsInfo').textContent = adAccounts.length + ' ad accounts';
-            
             renderAccountsGrid();
         }
 
-        // Load Account Budgets
-        async function loadAccountBudgets() {
-            var result = await db.from('account_budgets').select('*').eq('user_id', currentUser.id);
-            accountBudgets = result.data || [];
-            renderAlertsList();
-        }
+        async function loadAccountBudgets() { var r = await db.from('account_budgets').select('*').eq('user_id', currentUser.id); accountBudgets = r.data || []; }
+        async function loadCampaignBudgets() { var r = await db.from('campaign_budgets').select('*').eq('user_id', currentUser.id); campaignBudgets = r.data || []; }
 
-        // Render Accounts Grid
         function renderAccountsGrid() {
             var grid = document.getElementById('accountsGrid');
             grid.innerHTML = '';
-            
             adAccounts.forEach(function(account) {
                 var budget = accountBudgets.find(function(b) { return b.ad_account_id === account.account_id; });
                 var hasAlert = budget && budget.alerts_enabled;
-                
-                var statusMap = {
-                    1: { color: 'green', label: 'Active' },
-                    2: { color: 'red', label: 'Disabled' },
-                    3: { color: 'yellow', label: 'Unsettled' }
-                };
-                var status = statusMap[account.account_status] || statusMap[1];
-                
+                var campaignCount = campaignBudgets.filter(function(c) { return c.ad_account_id === account.account_id && c.alerts_enabled; }).length;
+                var statusColors = { 1: 'green', 2: 'red', 3: 'yellow' };
+                var statusLabels = { 1: 'Active', 2: 'Disabled', 3: 'Unsettled' };
+                var color = statusColors[account.account_status] || 'green';
+                var label = statusLabels[account.account_status] || 'Active';
                 var card = document.createElement('div');
-                card.className = 'bg-slate-800 rounded-xl border border-slate-700 p-5 hover:border-indigo-500/50 cursor-pointer transition-all';
-                card.innerHTML = 
-                    '<div class="flex items-start justify-between mb-3">' +
-                        '<div class="flex-1 min-w-0">' +
-                            '<h3 class="text-white font-medium truncate">' + (account.name || 'Unnamed') + '</h3>' +
-                            '<p class="text-slate-400 text-sm font-mono">' + (account.account_id || account.id) + '</p>' +
-                        '</div>' +
-                        (hasAlert ? '<span class="flex-shrink-0 ml-2 px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-full">Alert On</span>' : '') +
-                    '</div>' +
-                    '<div class="flex items-center justify-between">' +
-                        '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-' + status.color + '-500/20 text-' + status.color + '-400">' + status.label + '</span>' +
-                        '<span class="text-slate-400 text-sm">' + (account.currency || 'USD') + '</span>' +
-                    '</div>' +
-                    (budget ? '<div class="mt-3 pt-3 border-t border-slate-700"><p class="text-slate-400 text-sm">Budget: <span class="text-white">€' + (budget.monthly_budget || 0) + '</span></p></div>' : '');
-                
-                card.addEventListener('click', function() {
-                    openAccountDetail(account);
-                });
-                
+                card.className = 'bg-card rounded-xl border border-theme p-5 hover:border-indigo-500/50 cursor-pointer transition-all';
+                card.innerHTML = '<div class="flex items-start justify-between mb-3"><div class="flex-1 min-w-0"><h3 class="text-primary font-medium truncate">' + (account.name || 'Unnamed') + '</h3><p class="text-secondary text-sm font-mono">' + (account.account_id || account.id) + '</p></div>' + (hasAlert || campaignCount > 0 ? '<span class="ml-2 px-2 py-1 bg-amber-500/20 text-amber-500 text-xs rounded-full">' + (campaignCount > 0 ? campaignCount + ' alerts' : 'Alert') + '</span>' : '') + '</div><div class="flex items-center justify-between"><span class="px-2 py-1 rounded-full text-xs font-medium bg-' + color + '-500/20 text-' + color + '-500">' + label + '</span><span class="text-secondary text-sm">' + (account.currency || 'USD') + '</span></div>' + (budget ? '<div class="mt-3 pt-3 border-t border-theme"><p class="text-secondary text-sm">Budget: <span class="text-primary">€' + (budget.monthly_budget || 0) + '</span></p></div>' : '');
+                card.addEventListener('click', function() { openAccountDetail(account); });
                 grid.appendChild(card);
             });
         }
 
-        // Open Account Detail
         function openAccountDetail(account) {
             selectedAccount = account;
-            
             document.getElementById('accountDetailName').textContent = account.name || 'Unnamed Account';
             document.getElementById('accountDetailId').textContent = 'ID: ' + (account.account_id || account.id);
-            
-            // Load existing budget settings
             var budget = accountBudgets.find(function(b) { return b.ad_account_id === account.account_id; });
-            
             if (budget) {
                 document.getElementById('alertsEnabled').checked = budget.alerts_enabled !== false;
                 document.getElementById('monthlyBudget').value = budget.monthly_budget || '';
@@ -437,160 +429,191 @@
                 document.getElementById('overspendThreshold').value = 120;
                 document.getElementById('underspendThreshold').value = 50;
             }
-            
             document.getElementById('overspendValue').textContent = document.getElementById('overspendThreshold').value + '%';
             document.getElementById('underspendValue').textContent = document.getElementById('underspendThreshold').value + '%';
-            
+            document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+                if (i === 0) { b.classList.add('active', 'border-indigo-500', 'text-indigo-500'); b.classList.remove('border-transparent', 'text-secondary'); }
+                else { b.classList.remove('active', 'border-indigo-500', 'text-indigo-500'); b.classList.add('border-transparent', 'text-secondary'); }
+            });
+            document.getElementById('tab-account-settings').classList.remove('hidden');
+            document.getElementById('tab-campaigns').classList.add('hidden');
+            renderCampaignsList();
             document.getElementById('section-accounts').classList.add('hidden');
             document.getElementById('section-account-detail').classList.remove('hidden');
         }
 
-        // Back to Accounts
         document.getElementById('backToAccounts').addEventListener('click', function() {
             document.getElementById('section-account-detail').classList.add('hidden');
             document.getElementById('section-accounts').classList.remove('hidden');
             selectedAccount = null;
         });
 
-        // Save Account Settings
         document.getElementById('saveAccountSettings').addEventListener('click', async function() {
             if (!selectedAccount) return;
-            
-            var btn = this;
-            btn.textContent = 'Saving...';
-            btn.disabled = true;
-            
+            var btn = this; btn.textContent = 'Saving...'; btn.disabled = true;
             var budgetData = {
-                user_id: currentUser.id,
-                ad_account_id: selectedAccount.account_id,
-                ad_account_name: selectedAccount.name || 'Unnamed',
+                user_id: currentUser.id, ad_account_id: selectedAccount.account_id, ad_account_name: selectedAccount.name || 'Unnamed',
                 monthly_budget: parseFloat(document.getElementById('monthlyBudget').value) || 0,
-                period_start: document.getElementById('periodStart').value || null,
-                period_end: document.getElementById('periodEnd').value || null,
+                period_start: document.getElementById('periodStart').value || null, period_end: document.getElementById('periodEnd').value || null,
                 alert_overspend_threshold: parseInt(document.getElementById('overspendThreshold').value),
                 alert_underspend_threshold: parseInt(document.getElementById('underspendThreshold').value),
-                alerts_enabled: document.getElementById('alertsEnabled').checked,
-                updated_at: new Date().toISOString()
+                alerts_enabled: document.getElementById('alertsEnabled').checked, updated_at: new Date().toISOString()
             };
-            
             var result = await db.from('account_budgets').upsert(budgetData, { onConflict: 'user_id,ad_account_id' });
-            
-            if (result.error) {
-                alert('Failed to save: ' + result.error.message);
-            } else {
-                btn.textContent = 'Saved!';
-                await loadAccountBudgets();
-                renderAccountsGrid();
-                setTimeout(function() { btn.textContent = 'Save Settings'; }, 2000);
-            }
+            if (result.error) { alert('Failed: ' + result.error.message); }
+            else { btn.textContent = 'Saved!'; await loadAccountBudgets(); renderAccountsGrid(); renderAlerts(); setTimeout(function() { btn.textContent = 'Save Settings'; }, 2000); }
             btn.disabled = false;
         });
 
-        // Delete Account Settings
         document.getElementById('deleteAccountSettings').addEventListener('click', async function() {
-            if (!selectedAccount) return;
-            if (!confirm('Remove budget alert for this account?')) return;
-            
+            if (!selectedAccount || !confirm('Remove alert?')) return;
             await db.from('account_budgets').delete().eq('user_id', currentUser.id).eq('ad_account_id', selectedAccount.account_id);
-            
-            await loadAccountBudgets();
-            renderAccountsGrid();
-            
+            await loadAccountBudgets(); renderAccountsGrid(); renderAlerts();
             document.getElementById('section-account-detail').classList.add('hidden');
             document.getElementById('section-accounts').classList.remove('hidden');
         });
 
-        // Render Alerts List
-        function renderAlertsList() {
-            var list = document.getElementById('alertsList');
-            var noAlerts = document.getElementById('noAlerts');
-            
-            var enabledBudgets = accountBudgets.filter(function(b) { return b.alerts_enabled; });
-            
-            if (enabledBudgets.length === 0) {
-                list.classList.add('hidden');
-                noAlerts.classList.remove('hidden');
-                return;
-            }
-            
-            list.classList.remove('hidden');
-            noAlerts.classList.add('hidden');
-            list.innerHTML = '';
-            
-            enabledBudgets.forEach(function(budget) {
+        document.getElementById('loadCampaignsBtn').addEventListener('click', async function() {
+            if (!selectedAccount || !metaConnection) return;
+            var btn = this; btn.disabled = true; btn.textContent = 'Loading...';
+            document.getElementById('campaignsLoading').classList.remove('hidden');
+            document.getElementById('noCampaigns').classList.add('hidden');
+            try {
+                var response = await fetch('/api/meta?action=campaigns&account_id=' + selectedAccount.account_id);
+                var data = await response.json();
+                if (data.error) { alert('Error: ' + data.error); }
+                else { loadedCampaigns[selectedAccount.account_id] = data.campaigns || []; renderCampaignsList(); }
+            } catch (err) { alert('Failed: ' + err.message); }
+            document.getElementById('campaignsLoading').classList.add('hidden');
+            btn.disabled = false; btn.textContent = 'Load Campaigns';
+        });
+
+        function renderCampaignsList() {
+            if (!selectedAccount) return;
+            var campaigns = loadedCampaigns[selectedAccount.account_id] || [];
+            var list = document.getElementById('campaignsList');
+            var noCampaigns = document.getElementById('noCampaigns');
+            if (campaigns.length === 0) { list.innerHTML = ''; noCampaigns.classList.remove('hidden'); return; }
+            noCampaigns.classList.add('hidden'); list.innerHTML = '';
+            campaigns.forEach(function(campaign) {
+                var budget = campaignBudgets.find(function(b) { return b.campaign_id === campaign.id; });
+                var hasAlert = budget && budget.alerts_enabled;
+                var statusColors = { ACTIVE: 'green', PAUSED: 'yellow', DELETED: 'red', ARCHIVED: 'gray' };
+                var color = statusColors[campaign.status] || 'gray';
                 var card = document.createElement('div');
-                card.className = 'bg-slate-800 rounded-xl border border-slate-700 p-5';
-                card.innerHTML = 
-                    '<div class="flex items-center justify-between">' +
-                        '<div>' +
-                            '<h3 class="text-white font-medium">' + (budget.ad_account_name || 'Unnamed') + '</h3>' +
-                            '<p class="text-slate-400 text-sm">Budget: €' + (budget.monthly_budget || 0) + '/month</p>' +
-                        '</div>' +
-                        '<div class="text-right">' +
-                            '<p class="text-amber-400 text-sm">Overspend: >' + budget.alert_overspend_threshold + '%</p>' +
-                            '<p class="text-blue-400 text-sm">Underspend: <' + budget.alert_underspend_threshold + '%</p>' +
-                        '</div>' +
-                    '</div>';
+                card.className = 'bg-card rounded-xl border border-theme p-4 hover:border-indigo-500/50 cursor-pointer transition-all flex items-center justify-between';
+                card.innerHTML = '<div class="flex-1"><div class="flex items-center gap-2"><h4 class="text-primary font-medium truncate">' + campaign.name + '</h4>' + (hasAlert ? '<span class="px-2 py-0.5 bg-amber-500/20 text-amber-500 text-xs rounded-full">Alert</span>' : '') + '</div><p class="text-secondary text-sm">ID: ' + campaign.id + '</p></div><div class="flex items-center gap-3"><span class="px-2 py-1 rounded-full text-xs font-medium bg-' + color + '-500/20 text-' + color + '-500">' + campaign.status + '</span><svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>';
+                card.addEventListener('click', function() { openCampaignModal(campaign); });
                 list.appendChild(card);
             });
         }
 
-        // Load Notification Settings
-        async function loadNotificationSettings() {
-            var result = await db.from('notification_settings').select('*').eq('user_id', currentUser.id).single();
-            
-            if (result.data) {
-                document.getElementById('alertOverspending').checked = result.data.alert_overspending !== false;
-                document.getElementById('alertUnderspending').checked = result.data.alert_underspending !== false;
-                if (result.data.email) {
-                    document.getElementById('notificationEmail').value = result.data.email;
-                }
+        function openCampaignModal(campaign) {
+            selectedCampaign = campaign;
+            document.getElementById('campaignModalTitle').textContent = campaign.name;
+            var budget = campaignBudgets.find(function(b) { return b.campaign_id === campaign.id; });
+            if (budget) {
+                document.getElementById('campaignAlertsEnabled').checked = budget.alerts_enabled !== false;
+                document.getElementById('campaignBudget').value = budget.media_plan_budget || '';
+                document.getElementById('campaignBudgetPeriod').value = budget.budget_period || 'monthly';
+                document.getElementById('campaignOverspendThreshold').value = budget.alert_overspend_threshold || 120;
+                document.getElementById('campaignUnderspendThreshold').value = budget.alert_underspend_threshold || 50;
+            } else {
+                document.getElementById('campaignAlertsEnabled').checked = true;
+                document.getElementById('campaignBudget').value = '';
+                document.getElementById('campaignBudgetPeriod').value = 'monthly';
+                document.getElementById('campaignOverspendThreshold').value = 120;
+                document.getElementById('campaignUnderspendThreshold').value = 50;
             }
+            document.getElementById('campaignOverspendValue').textContent = document.getElementById('campaignOverspendThreshold').value + '%';
+            document.getElementById('campaignUnderspendValue').textContent = document.getElementById('campaignUnderspendThreshold').value + '%';
+            document.getElementById('campaignModal').classList.remove('hidden');
         }
 
-        // Save Settings
-        document.getElementById('saveSettings').addEventListener('click', async function() {
-            var btn = this;
-            btn.textContent = 'Saving...';
-            btn.disabled = true;
-            
-            var settings = {
-                user_id: currentUser.id,
-                email: document.getElementById('notificationEmail').value,
-                alert_overspending: document.getElementById('alertOverspending').checked,
-                alert_underspending: document.getElementById('alertUnderspending').checked,
-                updated_at: new Date().toISOString()
+        document.getElementById('closeCampaignModal').addEventListener('click', function() { document.getElementById('campaignModal').classList.add('hidden'); selectedCampaign = null; });
+        document.getElementById('campaignModal').addEventListener('click', function(e) { if (e.target === this) { this.classList.add('hidden'); selectedCampaign = null; } });
+
+        document.getElementById('saveCampaignSettings').addEventListener('click', async function() {
+            if (!selectedCampaign || !selectedAccount) return;
+            var btn = this; btn.textContent = 'Saving...'; btn.disabled = true;
+            var budgetData = {
+                user_id: currentUser.id, campaign_id: selectedCampaign.id, campaign_name: selectedCampaign.name,
+                ad_account_id: selectedAccount.account_id, media_plan_budget: parseFloat(document.getElementById('campaignBudget').value) || 0,
+                budget_period: document.getElementById('campaignBudgetPeriod').value,
+                alert_overspend_threshold: parseInt(document.getElementById('campaignOverspendThreshold').value),
+                alert_underspend_threshold: parseInt(document.getElementById('campaignUnderspendThreshold').value),
+                alerts_enabled: document.getElementById('campaignAlertsEnabled').checked, updated_at: new Date().toISOString()
             };
-            
-            var result = await db.from('notification_settings').upsert(settings, { onConflict: 'user_id' });
-            
-            if (result.error) {
-                alert('Failed to save settings');
-            } else {
-                btn.textContent = 'Saved!';
-                setTimeout(function() { btn.textContent = 'Save Settings'; }, 2000);
-            }
+            var result = await db.from('campaign_budgets').upsert(budgetData, { onConflict: 'user_id,campaign_id' });
+            if (result.error) { alert('Failed: ' + result.error.message); }
+            else { btn.textContent = 'Saved!'; await loadCampaignBudgets(); renderCampaignsList(); renderAccountsGrid(); renderAlerts(); setTimeout(function() { btn.textContent = 'Save'; document.getElementById('campaignModal').classList.add('hidden'); }, 1000); }
             btn.disabled = false;
         });
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', async function() {
-            await db.auth.signOut();
-            window.location.href = '/login';
+        document.getElementById('deleteCampaignSettings').addEventListener('click', async function() {
+            if (!selectedCampaign || !confirm('Remove alert?')) return;
+            await db.from('campaign_budgets').delete().eq('user_id', currentUser.id).eq('campaign_id', selectedCampaign.id);
+            await loadCampaignBudgets(); renderCampaignsList(); renderAccountsGrid(); renderAlerts();
+            document.getElementById('campaignModal').classList.add('hidden');
         });
 
-        // Connect Meta
+        function renderAlerts() {
+            var accountList = document.getElementById('accountAlertsList');
+            var noAccountAlerts = document.getElementById('noAccountAlerts');
+            var enabledAccounts = accountBudgets.filter(function(b) { return b.alerts_enabled; });
+            if (enabledAccounts.length === 0) { accountList.innerHTML = ''; noAccountAlerts.classList.remove('hidden'); }
+            else {
+                noAccountAlerts.classList.add('hidden'); accountList.innerHTML = '';
+                enabledAccounts.forEach(function(budget) {
+                    var card = document.createElement('div');
+                    card.className = 'bg-card rounded-xl border border-theme p-4 flex items-center justify-between';
+                    card.innerHTML = '<div><h4 class="text-primary font-medium">' + (budget.ad_account_name || 'Unnamed') + '</h4><p class="text-secondary text-sm">Budget: €' + (budget.monthly_budget || 0) + '/month</p></div><div class="text-right"><p class="text-amber-500 text-sm">Over: >' + budget.alert_overspend_threshold + '%</p><p class="text-blue-500 text-sm">Under: <' + budget.alert_underspend_threshold + '%</p></div>';
+                    accountList.appendChild(card);
+                });
+            }
+            var campaignList = document.getElementById('campaignAlertsList');
+            var noCampaignAlerts = document.getElementById('noCampaignAlerts');
+            var enabledCampaigns = campaignBudgets.filter(function(b) { return b.alerts_enabled; });
+            if (enabledCampaigns.length === 0) { campaignList.innerHTML = ''; noCampaignAlerts.classList.remove('hidden'); }
+            else {
+                noCampaignAlerts.classList.add('hidden'); campaignList.innerHTML = '';
+                enabledCampaigns.forEach(function(budget) {
+                    var card = document.createElement('div');
+                    card.className = 'bg-card rounded-xl border border-theme p-4 flex items-center justify-between';
+                    card.innerHTML = '<div><h4 class="text-primary font-medium">' + (budget.campaign_name || 'Unnamed') + '</h4><p class="text-secondary text-sm">Budget: €' + (budget.media_plan_budget || 0) + '/' + (budget.budget_period || 'month') + '</p></div><div class="text-right"><p class="text-amber-500 text-sm">Over: >' + budget.alert_overspend_threshold + '%</p><p class="text-blue-500 text-sm">Under: <' + budget.alert_underspend_threshold + '%</p></div>';
+                    campaignList.appendChild(card);
+                });
+            }
+        }
+
+        async function loadNotificationSettings() {
+            var result = await db.from('notification_settings').select('*').eq('user_id', currentUser.id).single();
+            if (result.data) {
+                document.getElementById('alertOverspending').checked = result.data.alert_overspending !== false;
+                document.getElementById('alertUnderspending').checked = result.data.alert_underspending !== false;
+                if (result.data.email) document.getElementById('notificationEmail').value = result.data.email;
+            }
+        }
+
+        document.getElementById('saveSettings').addEventListener('click', async function() {
+            var btn = this; btn.textContent = 'Saving...'; btn.disabled = true;
+            var settings = { user_id: currentUser.id, email: document.getElementById('notificationEmail').value, alert_overspending: document.getElementById('alertOverspending').checked, alert_underspending: document.getElementById('alertUnderspending').checked, updated_at: new Date().toISOString() };
+            var result = await db.from('notification_settings').upsert(settings, { onConflict: 'user_id' });
+            if (result.error) { alert('Failed'); } else { btn.textContent = 'Saved!'; setTimeout(function() { btn.textContent = 'Save Settings'; }, 2000); }
+            btn.disabled = false;
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async function() { await db.auth.signOut(); window.location.href = '/login'; });
+
         function connectMeta() {
             var appId = '1237093665238006';
             var redirect = encodeURIComponent(window.location.origin + '/auth-callback.html');
             var scopes = encodeURIComponent('ads_read,ads_management,business_management');
             window.location.href = 'https://www.facebook.com/v21.0/dialog/oauth?client_id=' + appId + '&redirect_uri=' + redirect + '&scope=' + scopes + '&response_type=code';
         }
-        
         document.getElementById('connectMetaBtn').addEventListener('click', connectMeta);
         document.getElementById('connectMetaBtn2').addEventListener('click', connectMeta);
 
-        // Start
         init();
     </script>
 </body>
