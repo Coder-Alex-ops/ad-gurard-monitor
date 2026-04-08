@@ -1,24 +1,50 @@
 // Vercel Serverless Function: Meta API with date filtering
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://jprnvftdfnhsfeuoxkkh.supabase.co',
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://jprnvftdfnhsfeuoxkkh.supabase.co';
+
+const supabaseAdmin = createClient(
+  SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const supabaseAuth = createClient(
+  SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY || ''
+);
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
+  const origin = req.headers.origin || '';
+  const allowedOrigins = [
+    'https://ad-gurard-monitor.vercel.app',
+    'http://localhost:3000'
+  ];
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { action, account_id, user_id, date_preset, date_from, date_to } = req.query;
+  // Authenticate via Supabase JWT
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization header required' });
+  }
+
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+  if (authError || !user) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  const user_id = user.id;
+  const { action, account_id, date_preset, date_from, date_to } = req.query;
 
   try {
-    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
-
-    const { data: connection, error: connError } = await supabase
+    const { data: connection, error: connError } = await supabaseAdmin
       .from('meta_connections')
       .select('access_token, token_expires_at')
       .eq('user_id', user_id)

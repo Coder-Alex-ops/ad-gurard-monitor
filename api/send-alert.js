@@ -1,9 +1,34 @@
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
     // Only allow POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Auth: require either a valid Supabase JWT or CRON_SECRET
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    const cronSecret = process.env.CRON_SECRET;
+
+    let authenticated = false;
+
+    if (cronSecret && token === cronSecret) {
+        authenticated = true;
+    } else if (token) {
+        const supabase = createClient(
+            process.env.SUPABASE_URL || 'https://jprnvftdfnhsfeuoxkkh.supabase.co',
+            process.env.SUPABASE_ANON_KEY || ''
+        );
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+            authenticated = true;
+        }
+    }
+
+    if (!authenticated) {
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY);

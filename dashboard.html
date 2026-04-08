@@ -357,6 +357,12 @@
         var selectedAccount = null, selectedCampaign = null, loadedCampaigns = {}, allCampaigns = [];
         var currentDateRange = { preset: 'today', from: null, to: null };
 
+        async function getAuthHeaders() {
+            var session = (await db.auth.getSession()).data.session;
+            if (!session) return {};
+            return { 'Authorization': 'Bearer ' + session.access_token };
+        }
+
         // Theme
         function initTheme() {
             if (localStorage.getItem('theme') === 'light') {
@@ -601,13 +607,13 @@
             document.getElementById('dateRangeInfo').classList.add('hidden');
             
             try {
-                var url = '/api/meta?action=campaigns&account_id=' + selectedAccount.account_id + '&user_id=' + currentUser.id;
+                var url = '/api/meta?action=campaigns&account_id=' + selectedAccount.account_id;
                 url += '&date_preset=' + currentDateRange.preset;
                 if (currentDateRange.preset === 'custom' && currentDateRange.from && currentDateRange.to) {
                     url += '&date_from=' + currentDateRange.from + '&date_to=' + currentDateRange.to;
                 }
-                
-                var response = await fetch(url);
+
+                var response = await fetch(url, { headers: await getAuthHeaders() });
                 var data = await response.json();
                 
                 if (data.error) { 

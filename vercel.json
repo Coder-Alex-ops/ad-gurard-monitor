@@ -1,7 +1,7 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/", "destination": "/home.html" },
+    { "source": "/", "destination": "/index.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/blog", "destination": "/blog.html" },
@@ -9,11 +9,9 @@
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/api/meta", "destination": "/api/meta.js" },
     { "source": "/api/auth/callback", "destination": "/api/auth/callback.js" },
-    { "source": "/api/auth/me", "destination": "/api/auth/me.js" },
-    { "source": "/api/auth/logout", "destination": "/api/auth/logout.js" },
     { "source": "/api/cron/check-budgets", "destination": "/api/cron/check-budgets.js" },
-    { "source": "/api/notification-settings", "destination": "/api/notification-settings.js" },
-    { "source": "/api/send-alert", "destination": "/api/send-alert.js" }
+    { "source": "/api/send-alert", "destination": "/api/send-alert.js" },
+    { "source": "/blog/:slug", "destination": "/blog-post.html" }
   ],
   "crons": [
     {
