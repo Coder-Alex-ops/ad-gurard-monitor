@@ -16,7 +16,7 @@ const supabaseAuth = createClient(
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowedOrigins = [
-    'https://ad-gurard-monitor.vercel.app',
+    'https://adguardian.tech',
     'http://localhost:3000'
   ];
   if (allowedOrigins.includes(origin)) {

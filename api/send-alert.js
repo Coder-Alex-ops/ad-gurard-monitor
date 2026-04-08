@@ -75,7 +75,7 @@ export default async function handler(req, res) {
                                 </tr>
                             </table>
                         </div>
-                        <a href="https://ad-gurard-monitor.vercel.app/dashboard.html" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        <a href="https://adguardian.tech/dashboard" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                             View Dashboard
                         </a>
                     </div>
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
                                 </tr>
                             </table>
                         </div>
-                        <a href="https://ad-gurard-monitor.vercel.app/dashboard.html" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        <a href="https://adguardian.tech/dashboard" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                             View Dashboard
                         </a>
                     </div>
