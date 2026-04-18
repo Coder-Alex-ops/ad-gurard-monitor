@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gross Profit Forecaster — AdGuardian</title>
+    <meta name="description" content="Free DTC profit forecaster. See your real breakeven ROAS, model 3 ad spend scenarios, and understand exactly where every dollar goes before you spend it.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-bg {
+            background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+                        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(168, 85, 247, 0.1), transparent);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(3, 7, 18, 0.8);
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-[#030712] text-white antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-lg">AdGuardian</span>
+                </a>
+
+                <div class="hidden md:flex items-center gap-8 text-sm">
+                    <a href="/#features" class="text-gray-400 hover:text-white transition-colors">Features</a>
+                    <a href="/#pricing" class="text-gray-400 hover:text-white transition-colors">Pricing</a>
+                    <a href="/profit-forecaster" class="text-white transition-colors">Free Tool</a>
+                    <a href="/blog" class="text-gray-400 hover:text-white transition-colors">Blog</a>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <a href="/login" class="text-sm text-gray-400 hover:text-white transition-colors px-3 py-2">Login</a>
+                    <a href="/login" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="hero-bg pt-28 pb-20">
+        <div class="max-w-6xl mx-auto px-6">
+            <!-- Header -->
+            <header class="text-center mb-12">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-400 mb-6">
+                    <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+                    Free Tool — no signup required
+                </div>
+                <h1 class="text-4xl sm:text-5xl font-extrabold leading-[1.1] mb-5">
+                    Gross Profit <span class="gradient-text">Forecaster</span>
+                </h1>
+                <p class="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+                    See your real breakeven ROAS, model three ad spend scenarios, and understand where every dollar goes — before you spend it.
+                </p>
+            </header>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Inputs -->
+                <aside class="lg:col-span-1">
+                    <div class="panel rounded-2xl p-6 lg:sticky lg:top-24">
+                        <h2 class="text-lg font-semibold mb-5">Your Unit Economics</h2>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1.5">Average Order Value (AOV)</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                    <input id="aov" type="number" value="85" min="0" step="1" class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-8 pr-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all" />
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Revenue per order</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1.5">Cost of Goods Sold (COGS)</label>
+                                <div class="relative">
+                                    <input id="cogs" type="number" value="35" min="0" max="100" step="1" class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-3 pr-8 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all" />
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Product cost as % of AOV</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1.5">Fulfillment Cost per Order</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                    <input id="fulfillment" type="number" value="8" min="0" step="0.5" class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-8 pr-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all" />
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Shipping, packaging, 3PL</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1.5">Payment Processing Fee</label>
+                                <div class="relative">
+                                    <input id="paymentFee" type="number" value="3" min="0" max="10" step="0.1" class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-3 pr-8 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all" />
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Stripe, PayPal, etc.</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-white/10 my-6"></div>
+
+                        <h3 class="text-sm font-semibold text-gray-300 mb-4">Scenario Settings</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1.5">Target ROAS</label>
+                                <div class="relative">
+                                    <input id="targetRoas" type="number" value="3" min="0.1" step="0.1" class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-3 pr-8 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all" />
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">x</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Expected return on ad spend</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1.5">Base Monthly Ad Spend</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                    <input id="baseAdSpend" type="number" value="5000" min="0" step="100" class="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 pl-8 pr-3 text-white focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all" />
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Middle scenario budget</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Results -->
+                <section class="lg:col-span-2 space-y-6">
+                    <!-- Key metrics -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div id="card-breakeven" class="panel rounded-xl p-4">
+                            <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Breakeven ROAS</div>
+                            <div id="metric-breakeven" class="text-2xl font-bold">—</div>
+                            <div id="metric-breakeven-sub" class="text-xs text-gray-500 mt-1">—</div>
+                        </div>
+                        <div class="panel rounded-xl p-4">
+                            <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Contribution Margin</div>
+                            <div id="metric-margin" class="text-2xl font-bold">—</div>
+                            <div id="metric-margin-sub" class="text-xs text-gray-500 mt-1">—</div>
+                        </div>
+                        <div class="panel rounded-xl p-4">
+                            <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Target ROAS</div>
+                            <div id="metric-target" class="text-2xl font-bold">—</div>
+                            <div id="metric-target-sub" class="text-xs text-gray-500 mt-1">—</div>
+                        </div>
+                        <div id="card-cushion" class="panel rounded-xl p-4">
+                            <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">ROAS Cushion</div>
+                            <div id="metric-cushion" class="text-2xl font-bold">—</div>
+                            <div id="metric-cushion-sub" class="text-xs text-gray-500 mt-1">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Health banner -->
+                    <div id="health-banner" class="rounded-2xl p-5 border">
+                        <div class="flex items-start gap-3">
+                            <div id="health-icon" class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div>
+                                <h3 id="health-title" class="font-semibold mb-1">—</h3>
+                                <p id="health-body" class="text-gray-400 text-sm leading-relaxed">—</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scenarios -->
+                    <div>
+                        <h2 class="text-xl font-semibold mb-4">Ad Spend Scenarios</h2>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div id="scenario-conservative" class="panel rounded-2xl p-5 border-l-4 border-l-blue-500/60"></div>
+                            <div id="scenario-moderate" class="panel rounded-2xl p-5 border-l-4 border-l-indigo-500/60"></div>
+                            <div id="scenario-aggressive" class="panel rounded-2xl p-5 border-l-4 border-l-purple-500/60"></div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown -->
+                    <div class="panel rounded-2xl p-6">
+                        <h3 class="font-semibold mb-4">Where Does Each Dollar Go?</h3>
+                        <div id="breakdown" class="space-y-3"></div>
+                    </div>
+
+                    <!-- CTA -->
+                    <div class="rounded-2xl p-6 text-center" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%); border: 1px solid rgba(99, 102, 241, 0.3);">
+                        <h3 class="text-xl font-semibold mb-2">Stop Overspending on Ads</h3>
+                        <p class="text-gray-400 mb-5 max-w-lg mx-auto">Your unit economics tell you what's profitable. AdGuardian makes sure you stick to it — with real-time budget alerts across Meta, Google and TikTok.</p>
+                        <a href="/login" class="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold">
+                            Start Free Monitoring
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-10">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-xs text-gray-600">© 2026 AdGuardian. All rights reserved.</p>
+            <div class="flex items-center gap-6 text-sm text-gray-500">
+                <a href="/" class="hover:text-white transition-colors">Home</a>
+                <a href="/blog" class="hover:text-white transition-colors">Blog</a>
+                <a href="/privacy.html" class="hover:text-white transition-colors">Privacy</a>
+                <a href="/terms.html" class="hover:text-white transition-colors">Terms</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const fmtUSD = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(isFinite(n) ? n : 0);
+        const fmtPct = (n) => `${(isFinite(n) ? n : 0).toFixed(1)}%`;
+
+        const inputs = {
+            aov: document.getElementById('aov'),
+            cogs: document.getElementById('cogs'),
+            fulfillment: document.getElementById('fulfillment'),
+            paymentFee: document.getElementById('paymentFee'),
+            targetRoas: document.getElementById('targetRoas'),
+            baseAdSpend: document.getElementById('baseAdSpend'),
+        };
+
+        const read = () => ({
+            aov: parseFloat(inputs.aov.value) || 0,
+            cogsPercent: parseFloat(inputs.cogs.value) || 0,
+            fulfillmentCost: parseFloat(inputs.fulfillment.value) || 0,
+            paymentFeePercent: parseFloat(inputs.paymentFee.value) || 0,
+            targetRoas: parseFloat(inputs.targetRoas.value) || 0,
+            baseAdSpend: parseFloat(inputs.baseAdSpend.value) || 0,
+        });
+
+        const renderScenario = (el, title, adSpend, m) => {
+            const profit = m.grossProfit > 0;
+            const profitClass = profit ? 'text-emerald-400' : 'text-red-400';
+            el.innerHTML = `
+                <h3 class="font-semibold mb-4">${title}</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">Ad Spend</span><span class="font-medium">${fmtUSD(adSpend)}</span></div>
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">Expected Revenue</span><span class="font-medium">${fmtUSD(m.revenue)}</span></div>
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">Orders</span><span class="font-medium">${m.orders.toLocaleString('en-US')}</span></div>
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">COGS</span><span class="text-red-400 font-medium">-${fmtUSD(m.cogs)}</span></div>
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">Fulfillment</span><span class="text-red-400 font-medium">-${fmtUSD(m.fulfillment)}</span></div>
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">Payment Fees</span><span class="text-red-400 font-medium">-${fmtUSD(m.paymentFees)}</span></div>
+                    <div class="flex justify-between py-1.5 border-b border-white/5"><span class="text-gray-400">Ad Spend</span><span class="text-red-400 font-medium">-${fmtUSD(adSpend)}</span></div>
+                    <div class="flex justify-between items-center mt-2 px-3 py-2.5 rounded-lg bg-white/5">
+                        <span class="font-semibold">Gross Profit</span>
+                        <span class="font-bold ${profitClass}">${profit ? '+' : ''}${fmtUSD(m.grossProfit)}</span>
+                    </div>
+                    <div class="flex justify-between py-1.5"><span class="text-gray-400">Profit Margin</span><span class="${profitClass} font-medium">${fmtPct(m.profitMargin)}</span></div>
+                    <div class="flex justify-between py-1.5"><span class="text-gray-400">Actual ROAS</span><span class="text-indigo-400 font-medium">${m.actualRoas.toFixed(2)}x</span></div>
+                </div>
+            `;
+        };
+
+        const calculate = () => {
+            const v = read();
+            const cogsPerOrder = v.aov * (v.cogsPercent / 100);
+            const paymentPerOrder = v.aov * (v.paymentFeePercent / 100);
+            const variableCost = cogsPerOrder + v.fulfillmentCost + paymentPerOrder;
+            const contribution = v.aov - variableCost;
+            const contributionPct = v.aov > 0 ? (contribution / v.aov) * 100 : 0;
+            const breakeven = contributionPct > 0 ? 100 / contributionPct : Infinity;
+
+            const scenario = (adSpend) => {
+                const revenue = adSpend * v.targetRoas;
+                const orders = v.aov > 0 ? revenue / v.aov : 0;
+                const cogs = orders * cogsPerOrder;
+                const fulfillment = orders * v.fulfillmentCost;
+                const paymentFees = orders * paymentPerOrder;
+                const grossProfit = revenue - cogs - fulfillment - paymentFees - adSpend;
+                const profitMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+                const actualRoas = adSpend > 0 ? revenue / adSpend : 0;
+                return { revenue, orders: Math.round(orders), cogs, fulfillment, paymentFees, grossProfit, profitMargin, actualRoas };
+            };
+
+            const conservative = scenario(v.baseAdSpend * 0.5);
+            const moderate = scenario(v.baseAdSpend);
+            const aggressive = scenario(v.baseAdSpend * 2);
+
+            const healthy = isFinite(breakeven) && v.targetRoas > breakeven;
+            const cushion = v.targetRoas - (isFinite(breakeven) ? breakeven : v.targetRoas);
+
+            // Metrics
+            document.getElementById('metric-breakeven').textContent = isFinite(breakeven) ? `${breakeven.toFixed(2)}x` : '∞';
+            document.getElementById('metric-breakeven').className = `text-2xl font-bold ${healthy ? 'text-emerald-400' : 'text-amber-400'}`;
+            document.getElementById('metric-breakeven-sub').textContent = healthy ? "You're above this" : 'Target is below this';
+
+            document.getElementById('metric-margin').textContent = fmtUSD(contribution);
+            document.getElementById('metric-margin-sub').textContent = `${fmtPct(contributionPct)} of AOV`;
+
+            document.getElementById('metric-target').textContent = `${v.targetRoas}x`;
+            document.getElementById('metric-target-sub').textContent = healthy ? 'Profitable target' : 'Below breakeven';
+
+            document.getElementById('metric-cushion').textContent = `${cushion.toFixed(2)}x`;
+            document.getElementById('metric-cushion').className = `text-2xl font-bold ${healthy ? 'text-emerald-400' : 'text-red-400'}`;
+            document.getElementById('metric-cushion-sub').textContent = healthy ? 'Buffer above breakeven' : 'Need higher ROAS';
+
+            // Health banner
+            const banner = document.getElementById('health-banner');
+            const icon = document.getElementById('health-icon');
+            if (healthy) {
+                banner.className = 'rounded-2xl p-5 border bg-emerald-500/5 border-emerald-500/30';
+                icon.className = 'w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-emerald-500/15 text-emerald-400';
+                icon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>';
+                document.getElementById('health-title').textContent = 'Your unit economics are healthy';
+                document.getElementById('health-body').textContent = `With a breakeven ROAS of ${breakeven.toFixed(2)}x and a target of ${v.targetRoas}x, every dollar above breakeven goes directly to gross profit.`;
+            } else {
+                banner.className = 'rounded-2xl p-5 border bg-amber-500/5 border-amber-500/30';
+                icon.className = 'w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-amber-500/15 text-amber-400';
+                icon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                document.getElementById('health-title').textContent = 'Warning: tight margins';
+                const breakevenText = isFinite(breakeven) ? `${breakeven.toFixed(2)}x` : 'infinity (no contribution margin)';
+                document.getElementById('health-body').textContent = `Your target ROAS of ${v.targetRoas}x does not cover your breakeven ROAS of ${breakevenText}. Improve margins, raise AOV, or target a higher ROAS.`;
+            }
+
+            // Scenarios
+            renderScenario(document.getElementById('scenario-conservative'), 'Conservative', v.baseAdSpend * 0.5, conservative);
+            renderScenario(document.getElementById('scenario-moderate'), 'Moderate', v.baseAdSpend, moderate);
+            renderScenario(document.getElementById('scenario-aggressive'), 'Aggressive', v.baseAdSpend * 2, aggressive);
+
+            // Breakdown
+            const fulfillmentPct = v.aov > 0 ? (v.fulfillmentCost / v.aov) * 100 : 0;
+            const rows = [
+                { label: 'Cost of Goods', pct: v.cogsPercent, color: 'bg-red-500' },
+                { label: 'Fulfillment', pct: fulfillmentPct, color: 'bg-orange-500' },
+                { label: 'Payment Fees', pct: v.paymentFeePercent, color: 'bg-yellow-500' },
+                { label: 'Contribution Margin', pct: contributionPct, color: 'bg-emerald-500' },
+            ];
+            document.getElementById('breakdown').innerHTML = rows.map(r => `
+                <div class="flex items-center gap-3">
+                    <div class="w-36 text-sm text-gray-400">${r.label}</div>
+                    <div class="flex-1 h-5 bg-white/5 rounded-full overflow-hidden">
+                        <div class="h-full ${r.color} rounded-full transition-all duration-300" style="width: ${Math.max(0, Math.min(r.pct, 100))}%"></div>
+                    </div>
+                    <div class="w-16 text-right text-sm font-medium">${fmtPct(r.pct)}</div>
+                </div>
+            `).join('');
+        };
+
+        Object.values(inputs).forEach(el => el.addEventListener('input', calculate));
+        calculate();
+    </script>
+</body>
+</html>

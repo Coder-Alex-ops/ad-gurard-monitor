@@ -5,7 +5,9 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "express": "^5.2.1",
+    "resend": "^3.2.0"
   },
   "engines": {
     "node": ">=18.0.0"

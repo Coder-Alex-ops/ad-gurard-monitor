@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Dashboard - AdGuardian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div class="min-h-screen">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <h1 class="text-2xl font-bold text-indigo-600">AdGuardian Test Dashboard</h1>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Test User</span>
+                        <button id="testAlertBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            Test Alert
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Accounts Section -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Ad Accounts</h2>
+                        <div id="accountsList" class="space-y-3">
+                            <div class="animate-pulse">
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campaigns Section -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Campaigns</h2>
+                        <div id="campaignsList" class="space-y-4">
+                            <div class="animate-pulse">
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div class="mt-8">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h2 class="text-lg font-semibold mb-4">Test Results</h2>
+                    <div id="testResults" class="space-y-2 text-sm">
+                        <p class="text-gray-600 dark:text-gray-400">Click "Test Alert" to send a test notification...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+
+        // Load accounts
+        async function loadAccounts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/meta`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const accountsList = document.getElementById('accountsList');
+                    accountsList.innerHTML = data.accounts.map(account => `
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                             onclick="loadCampaigns('${account.account_id}')">
+                            <div class="font-medium">${account.name}</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">
+                                €${(account.amount_spent / 100).toFixed(2)} spent
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+                document.getElementById('accountsList').innerHTML =
+                    '<p class="text-red-600">Error loading accounts. Make sure dev server is running.</p>';
+            }
+        }
+
+        // Load campaigns
+        async function loadCampaigns(accountId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/meta/campaigns?account_id=${accountId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const campaignsList = document.getElementById('campaignsList');
+                    campaignsList.innerHTML = data.campaigns.map(campaign => `
+                        <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-medium">${campaign.name}</h3>
+                                <span class="px-2 py-1 text-xs rounded-full ${
+                                    campaign.status === 'ACTIVE'
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                }">
+                                    ${campaign.status}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Spend:</span>
+                                    <span class="font-medium">€${campaign.spend.toFixed(2)}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Pacing:</span>
+                                    <span class="font-medium ${
+                                        campaign.pacing_status === 'overspending' ? 'text-red-600' :
+                                        campaign.pacing_status === 'underspending' ? 'text-yellow-600' :
+                                        'text-green-600'
+                                    }">${campaign.pacing_percent}%</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Impressions:</span>
+                                    <span class="font-medium">${campaign.impressions.toLocaleString()}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 dark:text-gray-400">Clicks:</span>
+                                    <span class="font-medium">${campaign.clicks}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading campaigns:', error);
+                document.getElementById('campaignsList').innerHTML =
+                    '<p class="text-red-600">Error loading campaigns.</p>';
+            }
+        }
+
+        // Test alert notification
+        async function testAlert() {
+            const testResults = document.getElementById('testResults');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/send-alert`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: 'test@example.com',
+                        alertType: 'overspending',
+                        campaignName: 'Test Campaign',
+                        currentSpend: 150,
+                        expectedSpend: 100,
+                        pacingPercent: 150,
+                        accountName: 'Test Account'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    testResults.innerHTML = `
+                        <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                            <div class="flex items-center">
+                                <span class="text-green-600 dark:text-green-400 mr-2">✅</span>
+                                <span class="font-medium text-green-800 dark:text-green-200">Alert sent successfully!</span>
+                            </div>
+                            <div class="mt-2 text-sm text-green-700 dark:text-green-300">
+                                <p>Mock email sent to: test@example.com</p>
+                                <p>Subject: ⚠️ Overspending Alert: Test Campaign</p>
+                                <p>Current spend: €150 (Expected: €100)</p>
+                                <p>Pacing: 150%</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    testResults.innerHTML = '<p class="text-red-600">❌ Failed to send alert</p>';
+                }
+            } catch (error) {
+                console.error('Error sending alert:', error);
+                testResults.innerHTML = `
+                    <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <div class="flex items-center">
+                            <span class="text-red-600 dark:text-red-400 mr-2">❌</span>
+                            <span class="font-medium text-red-800 dark:text-red-200">Error sending alert</span>
+                        </div>
+                        <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                            Make sure the development server is running: <code>node dev-server.js</code>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAccounts();
+            document.getElementById('testAlertBtn').addEventListener('click', testAlert);
+        });
+    </script>
+</body>
+</html>

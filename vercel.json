@@ -5,6 +5,7 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/blog", "destination": "/blog.html" },
+    { "source": "/profit-forecaster", "destination": "/profit-forecaster.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/api/meta", "destination": "/api/meta.js" },
